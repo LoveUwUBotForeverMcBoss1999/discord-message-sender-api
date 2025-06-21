@@ -4,7 +4,7 @@ import json
 import os
 import requests
 import re
-from urllib.parse import unquote
+from urllib.parse import unquote, urlparse
 
 app = Flask(__name__)
 
@@ -13,7 +13,7 @@ CORS(app, resources={
     r"/*": {
         "origins": "*",
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Authorization"]
+        "allow_headers": ["Content-Type", "Authorization", "Origin", "Referer"]
     }
 })
 
@@ -33,6 +33,66 @@ def validate_email(email):
     # Basic email pattern: {name}@{domain}
     pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
     return re.match(pattern, email) is not None
+
+
+def validate_url_access(key, request_origin, request_referer):
+    """
+    Validate if the request is coming from an authorized URL
+    Returns (is_valid, error_message)
+    """
+    keys_data = load_keys()
+    valid_keys = keys_data.get("keys", {})
+
+    if key not in valid_keys:
+        return False, "Invalid API key"
+
+    key_config = valid_keys[key]
+    authorized_url = key_config.get("url")
+
+    if not authorized_url:
+        return False, "No authorized URL configured for this key"
+
+    # Parse the authorized URL
+    try:
+        parsed_auth_url = urlparse(authorized_url)
+        auth_domain = parsed_auth_url.netloc.lower()
+        auth_scheme = parsed_auth_url.scheme.lower()
+
+        # Only allow HTTPS (except for localhost/127.0.0.1 for development)
+        if auth_scheme != 'https':
+            if not (auth_domain.startswith('localhost') or auth_domain.startswith('127.0.0.1')):
+                return False, "Only HTTPS URLs are allowed (except localhost for development)"
+
+    except Exception as e:
+        return False, f"Invalid authorized URL format: {str(e)}"
+
+    # Check both Origin and Referer headers
+    sources_to_check = []
+
+    if request_origin:
+        sources_to_check.append(('Origin', request_origin))
+
+    if request_referer:
+        sources_to_check.append(('Referer', request_referer))
+
+    if not sources_to_check:
+        return False, "No Origin or Referer header found. Request must come from a web browser."
+
+    # Validate each source
+    for header_name, source_url in sources_to_check:
+        try:
+            parsed_source = urlparse(source_url)
+            source_domain = parsed_source.netloc.lower()
+            source_scheme = parsed_source.scheme.lower()
+
+            # Check if domain matches
+            if source_domain == auth_domain and source_scheme == auth_scheme:
+                return True, None
+
+        except Exception:
+            continue  # Try next source if this one fails to parse
+
+    return False, f"Request must come from authorized URL: {authorized_url}"
 
 
 def check_bot_in_server(server_id, bot_token):
@@ -81,9 +141,14 @@ def check_channel_access(channel_id, bot_token):
         return False
 
 
-def send_discord_message(email, message, bot_token, channel_id):
+def send_discord_message(email, message, bot_token, channel_id, source_info=None):
     # Format message - replace \ with actual line breaks
     formatted_message = message.replace('\\', '\n')
+
+    # Add source info for security logging
+    source_text = ""
+    if source_info:
+        source_text = f"\n🔗 **Source:** {source_info}"
 
     url = f"https://discord.com/api/v9/channels/{channel_id}/messages"
     headers = {
@@ -92,13 +157,13 @@ def send_discord_message(email, message, bot_token, channel_id):
     }
 
     # If message is short enough, use embed description (4096 char limit)
-    if len(formatted_message) <= 4000:  # Leave some buffer
+    if len(formatted_message) <= 3800:  # Leave buffer for source info
         embed = {
             "title": "📧 New Message",
-            "description": f"**📧 Email:** {email}\n\n**💬 Message:**\n{formatted_message}",
+            "description": f"**📧 Email:** {email}\n\n**💬 Message:**\n{formatted_message}{source_text}",
             "color": 0x00ff00,
             "footer": {
-                "text": "Customer Service API"
+                "text": "Customer Service API - Secure"
             }
         }
 
@@ -117,10 +182,10 @@ def send_discord_message(email, message, bot_token, channel_id):
             # Send header message first
             header_embed = {
                 "title": "📧 New Message",
-                "description": f"**📧 Email:** {email}\n\n**💬 Message:** (Long message - sent in parts)",
+                "description": f"**📧 Email:** {email}\n\n**💬 Message:** (Long message - sent in parts){source_text}",
                 "color": 0x00ff00,
                 "footer": {
-                    "text": "Customer Service API"
+                    "text": "Customer Service API - Secure"
                 }
             }
 
@@ -154,25 +219,33 @@ def send_discord_message(email, message, bot_token, channel_id):
 def home():
     return jsonify({
         "status": "active",
-        "message": "Discord API is running",
+        "message": "Discord API is running with URL authentication",
         "usage": "/api/{key}/email-{email}/message-{message}",
-        "post_usage": "/api/{key}/send"
+        "post_usage": "/api/{key}/send",
+        "security": "Requests must come from authorized URLs only"
     })
 
 
 @app.route('/api/<key>/send', methods=['POST'])
 def send_message_post(key):
-    """POST endpoint for longer messages"""
+    """POST endpoint for longer messages with URL authentication"""
+
+    # Get origin and referer from headers
+    origin = request.headers.get('Origin')
+    referer = request.headers.get('Referer')
+
+    # Validate URL access first
+    is_valid, error_msg = validate_url_access(key, origin, referer)
+    if not is_valid:
+        return jsonify({
+            "error": error_msg,
+            "status": "unauthorized",
+            "security_note": "Request must come from authorized website"
+        }), 403
+
     # Load current keys
     keys_data = load_keys()
     valid_keys = keys_data.get("keys", {})
-
-    # Check if key is valid
-    if key not in valid_keys:
-        return jsonify({
-            "error": "Invalid API key",
-            "status": "unauthorized"
-        }), 401
 
     # Get key configuration
     key_config = valid_keys[key]
@@ -233,8 +306,11 @@ def send_message_post(key):
             "status": "bad_request"
         }), 400
 
+    # Prepare source info for logging
+    source_info = origin or referer or "Unknown"
+
     # Send message to Discord
-    success = send_discord_message(email, message, bot_token, channel_id)
+    success = send_discord_message(email, message, bot_token, channel_id, source_info)
 
     if success:
         return jsonify({
@@ -243,7 +319,8 @@ def send_message_post(key):
             "email": email,
             "sent_message": message.replace('\\', '\n'),
             "channel_id": channel_id,
-            "server_id": server_id
+            "server_id": server_id,
+            "source": source_info
         })
     else:
         return jsonify({
@@ -255,16 +332,24 @@ def send_message_post(key):
 
 @app.route('/api/<key>/email-<email>/message-<path:message>')
 def send_message_get(key, email, message):
+    """GET endpoint with URL authentication"""
+
+    # Get origin and referer from headers
+    origin = request.headers.get('Origin')
+    referer = request.headers.get('Referer')
+
+    # Validate URL access first
+    is_valid, error_msg = validate_url_access(key, origin, referer)
+    if not is_valid:
+        return jsonify({
+            "error": error_msg,
+            "status": "unauthorized",
+            "security_note": "Request must come from authorized website"
+        }), 403
+
     # Load current keys
     keys_data = load_keys()
     valid_keys = keys_data.get("keys", {})
-
-    # Check if key is valid
-    if key not in valid_keys:
-        return jsonify({
-            "error": "Invalid API key",
-            "status": "unauthorized"
-        }), 401
 
     # Get key configuration
     key_config = valid_keys[key]
@@ -322,8 +407,11 @@ def send_message_get(key, email, message):
             "received_email": decoded_email
         }), 400
 
+    # Prepare source info for logging
+    source_info = origin or referer or "Unknown"
+
     # Send message to Discord
-    success = send_discord_message(decoded_email, decoded_message, bot_token, channel_id)
+    success = send_discord_message(decoded_email, decoded_message, bot_token, channel_id, source_info)
 
     if success:
         return jsonify({
@@ -332,7 +420,8 @@ def send_message_get(key, email, message):
             "email": decoded_email,
             "sent_message": decoded_message.replace('\\', '\n'),
             "channel_id": channel_id,
-            "server_id": server_id
+            "server_id": server_id,
+            "source": source_info
         })
     else:
         return jsonify({
@@ -399,6 +488,28 @@ def get_key_info(key):
             "channel_access": channel_access
         }
     })
+
+
+@app.route('/validate/<key>')
+def validate_key_from_url(key):
+    """Validate if current request origin is authorized for this key"""
+    origin = request.headers.get('Origin')
+    referer = request.headers.get('Referer')
+
+    is_valid, error_msg = validate_url_access(key, origin, referer)
+
+    if is_valid:
+        return jsonify({
+            "status": "authorized",
+            "message": "Request origin is authorized for this key",
+            "source": origin or referer
+        })
+    else:
+        return jsonify({
+            "status": "unauthorized",
+            "error": error_msg,
+            "source": origin or referer or "No origin/referer found"
+        }), 403
 
 
 # Handle preflight OPTIONS requests

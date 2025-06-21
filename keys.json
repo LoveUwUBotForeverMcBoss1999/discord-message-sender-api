@@ -3,12 +3,8 @@
     "testing-customer-service-key": {
       "channel_id": "1385836633227530380",
       "server_id": "1371914509467254937",
-      "description": "Testing Customer service channel"
-    },
-    "test-key-123": {
-      "channel_id": "1385836633227530380",
-      "server_id": "1234567890123456789",
-      "description": "Test channel"
+      "description": "Testing Customer service channel",
+      "url": "https://customer-sup.mcboss.top/"
     }
   }
 }
