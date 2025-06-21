@@ -42,61 +42,70 @@ DISCORD_CHANNEL_ID = "1385836633227530380"
 def send_discord_message(email, message, bot_token):
     # Format message - replace \ with actual line breaks
     formatted_message = message.replace('\\', '\n')
-
-    # Create embed
-    embed = {
-        "title": "📧 New Message",
-        "color": 0x00ff00,
-        "fields": [
-            {
-                "name": "📧 Email",
-                "value": email,
-                "inline": False
-            },
-            {
-                "name": "💬 Message",
-                "value": formatted_message[:1024],  # Limit field value to Discord's max
-                "inline": False
-            }
-        ],
-        "timestamp": None,
-        "footer": {
-            "text": "Customer Service API"
-        }
-    }
-
-    # If message is longer than 1024 chars, add additional fields
-    if len(formatted_message) > 1024:
-        remaining_message = formatted_message[1024:]
-        field_count = 2
-
-        while remaining_message and field_count < 25:  # Discord max 25 fields per embed
-            chunk_size = min(1024, len(remaining_message))
-            embed["fields"].append({
-                "name": f"💬 Message (continued {field_count - 1})",
-                "value": remaining_message[:chunk_size],
-                "inline": False
-            })
-            remaining_message = remaining_message[chunk_size:]
-            field_count += 1
-
-    payload = {
-        "embeds": [embed]
-    }
-
+    
+    url = f"https://discord.com/api/v9/channels/{DISCORD_CHANNEL_ID}/messages"
     headers = {
         "Authorization": f"Bot {bot_token}",
         "Content-Type": "application/json"
     }
 
-    url = f"https://discord.com/api/v9/channels/{DISCORD_CHANNEL_ID}/messages"
-
-    try:
-        response = requests.post(url, json=payload, headers=headers)
-        return response.status_code == 200
-    except Exception as e:
-        print(f"Error sending Discord message: {e}")
-        return False
+    # If message is short enough, use embed description (4096 char limit)
+    if len(formatted_message) <= 4000:  # Leave some buffer
+        embed = {
+            "title": "📧 New Message",
+            "description": f"**📧 Email:** {email}\n\n**💬 Message:**\n{formatted_message}",
+            "color": 0x00ff00,
+            "footer": {
+                "text": "Customer Service API"
+            }
+        }
+        
+        payload = {"embeds": [embed]}
+        
+        try:
+            response = requests.post(url, json=payload, headers=headers)
+            return response.status_code == 200
+        except Exception as e:
+            print(f"Error sending Discord message: {e}")
+            return False
+    
+    # For very long messages, send as multiple messages
+    else:
+        try:
+            # Send header message first
+            header_embed = {
+                "title": "📧 New Message",
+                "description": f"**📧 Email:** {email}\n\n**💬 Message:** (Long message - sent in parts)",
+                "color": 0x00ff00,
+                "footer": {
+                    "text": "Customer Service API"
+                }
+            }
+            
+            header_payload = {"embeds": [header_embed]}
+            response = requests.post(url, json=header_payload, headers=headers)
+            
+            if response.status_code != 200:
+                return False
+            
+            # Send message content in chunks as regular messages (not embeds)
+            chunk_size = 1900  # Discord message limit is 2000 chars
+            message_parts = [formatted_message[i:i+chunk_size] for i in range(0, len(formatted_message), chunk_size)]
+            
+            for i, part in enumerate(message_parts):
+                part_payload = {
+                    "content": f"```\n{part}\n```"  # Use code block to preserve formatting
+                }
+                
+                response = requests.post(url, json=part_payload, headers=headers)
+                if response.status_code != 200:
+                    return False
+            
+            return True
+            
+        except Exception as e:
+            print(f"Error sending Discord message: {e}")
+            return False
 
 
 @app.route('/')
