@@ -495,6 +495,7 @@ def get_key_info(key):
 
     channel_id = key_config.get("channel_id")
     server_id = key_config.get("server_id")
+    owner_id = key_config.get("owner_id")
 
     # Check access
     server_access = check_bot_in_server(server_id, bot_token) if server_id else False
@@ -502,6 +503,7 @@ def get_key_info(key):
 
     return jsonify({
         "key": key,
+        "owner_id": owner_id,
         "config": key_config,
         "access_status": {
             "server_access": server_access,
