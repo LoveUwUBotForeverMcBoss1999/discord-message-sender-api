@@ -141,6 +141,86 @@ def check_channel_access(channel_id, bot_token):
         return False
 
 
+def check_user_in_server(user_id, server_id, bot_token):
+    """Check if user is in the specified server"""
+    url = f"https://discord.com/api/v9/guilds/{server_id}/members/{user_id}"
+    headers = {
+        "Authorization": f"Bot {bot_token}",
+        "Content-Type": "application/json"
+    }
+
+    try:
+        response = requests.get(url, headers=headers)
+        if response.status_code == 200:
+            return True, response.json()
+        elif response.status_code == 404:
+            return False, None  # User not in server
+        else:
+            return False, None
+    except Exception as e:
+        print(f"Error checking user server membership: {e}")
+        return False, None
+
+
+def check_user_admin_permissions(user_id, server_id, bot_token):
+    """
+    Check if user has administrator permissions in the server
+    Returns (has_admin, error_message)
+    """
+    try:
+        # First check if user is in server
+        is_member, member_data = check_user_in_server(user_id, server_id, bot_token)
+        
+        if not is_member:
+            return False, "User is not a member of this server"
+
+        # Get user's roles
+        user_roles = member_data.get('roles', [])
+        
+        # Get server info to check roles
+        guild_url = f"https://discord.com/api/v9/guilds/{server_id}"
+        headers = {
+            "Authorization": f"Bot {bot_token}",
+            "Content-Type": "application/json"
+        }
+        
+        guild_response = requests.get(guild_url, headers=headers)
+        
+        if guild_response.status_code != 200:
+            return False, "Could not fetch server information"
+            
+        guild_data = guild_response.json()
+        
+        # Check if user is server owner
+        if str(guild_data.get('owner_id')) == str(user_id):
+            return True, None
+            
+        # Get all roles in the server
+        roles_url = f"https://discord.com/api/v9/guilds/{server_id}/roles"
+        roles_response = requests.get(roles_url, headers=headers)
+        
+        if roles_response.status_code != 200:
+            return False, "Could not fetch server roles"
+            
+        server_roles = roles_response.json()
+        
+        # Check if any of user's roles have administrator permission
+        # Administrator permission bit is 0x8 (8)
+        ADMINISTRATOR_PERMISSION = 8
+        
+        for role in server_roles:
+            if role['id'] in user_roles:
+                permissions = int(role.get('permissions', 0))
+                if permissions & ADMINISTRATOR_PERMISSION:
+                    return True, None
+                    
+        return False, "User does not have administrator permissions in this server"
+        
+    except Exception as e:
+        print(f"Error checking user admin permissions: {e}")
+        return False, f"Error checking permissions: {str(e)}"
+
+
 def send_discord_message(email, message, bot_token, channel_id, source_info=None):
     # Format message - replace \ with actual line breaks
     formatted_message = message.replace('\\', '\n')
@@ -215,23 +295,24 @@ def send_discord_message(email, message, bot_token, channel_id, source_info=None
             return False
 
 
-
-
-
 @app.route('/')
 def home():
     return jsonify({
         "status": "active",
-        "message": "Discord API is running with URL authentication",
+        "message": "Discord API is running with URL authentication and owner verification",
         "usage": "/api/{key}/email-{email}/message-{message}",
         "post_usage": "/api/{key}/send",
-        "security": "Requests must come from authorized URLs only"
+        "security": [
+            "Requests must come from authorized URLs only",
+            "API keys can only be created via Discord bot command",
+            "API owner must have administrator permissions in target server"
+        ]
     })
 
 
 @app.route('/api/<key>/send', methods=['POST'])
 def send_message_post(key):
-    """POST endpoint for longer messages with URL authentication"""
+    """POST endpoint for longer messages with URL authentication and owner verification"""
 
     # Get origin and referer from headers
     origin = request.headers.get('Origin')
@@ -254,10 +335,11 @@ def send_message_post(key):
     key_config = valid_keys[key]
     channel_id = key_config.get("channel_id")
     server_id = key_config.get("server_id")
+    owner_id = key_config.get("owner_id")
 
-    if not channel_id or not server_id:
+    if not channel_id or not server_id or not owner_id:
         return jsonify({
-            "error": "Key configuration incomplete - missing channel_id or server_id",
+            "error": "Key configuration incomplete - missing channel_id, server_id, or owner_id",
             "status": "server_error"
         }), 500
 
@@ -283,6 +365,17 @@ def send_message_post(key):
             "error": f"Bot cannot access the channel (ID: {channel_id}) or channel doesn't exist",
             "status": "channel_access_error",
             "channel_id": channel_id
+        }), 403
+
+    # 🔐 SECURITY CHECK: Verify API owner has admin permissions in the server
+    has_admin, admin_error = check_user_admin_permissions(owner_id, server_id, bot_token)
+    if not has_admin:
+        return jsonify({
+            "error": f"API owner does not have administrator permissions in server: {admin_error}",
+            "status": "permission_denied",
+            "owner_id": owner_id,
+            "server_id": server_id,
+            "security_note": "Only users with administrator permissions can use API keys for this server"
         }), 403
 
     # Get data from JSON body
@@ -323,7 +416,9 @@ def send_message_post(key):
             "sent_message": message.replace('\\', '\n'),
             "channel_id": channel_id,
             "server_id": server_id,
-            "source": source_info
+            "owner_id": owner_id,
+            "source": source_info,
+            "security_verified": "API owner has administrator permissions"
         })
     else:
         return jsonify({
@@ -335,7 +430,7 @@ def send_message_post(key):
 
 @app.route('/api/<key>/email-<email>/message-<path:message>')
 def send_message_get(key, email, message):
-    """GET endpoint with URL authentication"""
+    """GET endpoint with URL authentication and owner verification"""
 
     # Get origin and referer from headers
     origin = request.headers.get('Origin')
@@ -358,10 +453,11 @@ def send_message_get(key, email, message):
     key_config = valid_keys[key]
     channel_id = key_config.get("channel_id")
     server_id = key_config.get("server_id")
+    owner_id = key_config.get("owner_id")
 
-    if not channel_id or not server_id:
+    if not channel_id or not server_id or not owner_id:
         return jsonify({
-            "error": "Key configuration incomplete - missing channel_id or server_id",
+            "error": "Key configuration incomplete - missing channel_id, server_id, or owner_id",
             "status": "server_error"
         }), 500
 
@@ -387,6 +483,17 @@ def send_message_get(key, email, message):
             "error": f"Bot cannot access the channel (ID: {channel_id}) or channel doesn't exist",
             "status": "channel_access_error",
             "channel_id": channel_id
+        }), 403
+
+    # 🔐 SECURITY CHECK: Verify API owner has admin permissions in the server
+    has_admin, admin_error = check_user_admin_permissions(owner_id, server_id, bot_token)
+    if not has_admin:
+        return jsonify({
+            "error": f"API owner does not have administrator permissions in server: {admin_error}",
+            "status": "permission_denied",
+            "owner_id": owner_id,
+            "server_id": server_id,
+            "security_note": "Only users with administrator permissions can use API keys for this server"
         }), 403
 
     # Decode URL-encoded message and email
@@ -424,7 +531,9 @@ def send_message_get(key, email, message):
             "sent_message": decoded_message.replace('\\', '\n'),
             "channel_id": channel_id,
             "server_id": server_id,
-            "source": source_info
+            "owner_id": owner_id,
+            "source": source_info,
+            "security_verified": "API owner has administrator permissions"
         })
     else:
         return jsonify({
@@ -456,7 +565,7 @@ def get_keys():
 
 @app.route('/keys/<key>/info', methods=['GET'])
 def get_key_info(key):
-    """Get information about a specific key"""
+    """Get information about a specific key with security validation"""
     keys_data = load_keys()
     valid_keys = keys_data.get("keys", {})
 
@@ -483,6 +592,9 @@ def get_key_info(key):
     # Check access
     server_access = check_bot_in_server(server_id, bot_token) if server_id else False
     channel_access = check_channel_access(channel_id, bot_token) if channel_id else False
+    
+    # Check owner permissions
+    has_admin, admin_error = check_user_admin_permissions(owner_id, server_id, bot_token) if owner_id and server_id else (False, "Missing owner_id or server_id")
 
     return jsonify({
         "key": key,
@@ -490,31 +602,56 @@ def get_key_info(key):
         "config": key_config,
         "access_status": {
             "server_access": server_access,
-            "channel_access": channel_access
-        }
+            "channel_access": channel_access,
+            "owner_has_admin": has_admin,
+            "admin_check_error": admin_error
+        },
+        "security_status": "SECURE" if (server_access and channel_access and has_admin) else "INSECURE"
     })
 
 
 @app.route('/validate/<key>')
 def validate_key_from_url(key):
-    """Validate if current request origin is authorized for this key"""
+    """Validate if current request origin is authorized for this key and check owner permissions"""
     origin = request.headers.get('Origin')
     referer = request.headers.get('Referer')
 
+    # Check URL authorization
     is_valid, error_msg = validate_url_access(key, origin, referer)
 
-    if is_valid:
-        return jsonify({
-            "status": "authorized",
-            "message": "Request origin is authorized for this key",
-            "source": origin or referer
-        })
-    else:
+    if not is_valid:
         return jsonify({
             "status": "unauthorized",
             "error": error_msg,
             "source": origin or referer or "No origin/referer found"
         }), 403
+
+    # Load key config
+    keys_data = load_keys()
+    valid_keys = keys_data.get("keys", {})
+    key_config = valid_keys[key]
+    
+    owner_id = key_config.get("owner_id")
+    server_id = key_config.get("server_id")
+    
+    # Get Discord bot token
+    bot_token = os.getenv('DISCORD_BOT_TOKEN') or os.getenv('discord_bot_token')
+    if not bot_token:
+        return jsonify({
+            "status": "server_error",
+            "error": "Discord bot token not configured"
+        }), 500
+
+    # Check owner permissions
+    has_admin, admin_error = check_user_admin_permissions(owner_id, server_id, bot_token) if owner_id and server_id else (False, "Missing owner_id or server_id")
+
+    return jsonify({
+        "status": "authorized" if has_admin else "permission_denied",
+        "message": "Request origin is authorized for this key and owner has admin permissions" if has_admin else f"Owner lacks admin permissions: {admin_error}",
+        "source": origin or referer,
+        "owner_has_admin": has_admin,
+        "security_verified": has_admin
+    })
 
 
 @app.route('/invite-link')
@@ -560,7 +697,8 @@ def get_bot_invite_link():
                     "value": permissions,
                     "description": "Send Messages, Read Message History, View Channel"
                 },
-                "instructions": "Click the invite URL to add the bot to your Discord server"
+                "instructions": "Click the invite URL to add the bot to your Discord server. Only users with administrator permissions can create API keys for this server.",
+                "security_note": "API keys can only be created via Discord bot command and require administrator permissions"
             })
         else:
             return jsonify({
@@ -604,8 +742,6 @@ def api_documentation():
             "error": f"Error loading documentation: {str(e)}",
             "status": "server_error"
         }), 500
-
-
 
 
 if __name__ == '__main__':
