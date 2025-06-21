@@ -3,6 +3,7 @@ from flask_cors import CORS
 import json
 import os
 import requests
+import re
 from urllib.parse import unquote
 
 app = Flask(__name__)
@@ -24,6 +25,14 @@ def load_keys():
             return json.load(f)
     except FileNotFoundError:
         return {"keys": []}
+
+
+# Email validation function
+def validate_email(email):
+    """Validate email format using regex"""
+    # Basic email pattern: {name}@{domain}
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    return re.match(pattern, email) is not None
 
 
 # Discord channel ID
@@ -138,6 +147,13 @@ def send_message_post(key):
             "status": "bad_request"
         }), 400
 
+    # Validate email format
+    if not validate_email(email):
+        return jsonify({
+            "error": "Invalid email format. Email must be in format: name@domain.com",
+            "status": "bad_request"
+        }), 400
+
     # Send message to Discord
     success = send_discord_message(email, message, bot_token)
 
@@ -179,6 +195,23 @@ def send_message_get(key, email, message):
     # Decode URL-encoded message and email
     decoded_message = unquote(message)
     decoded_email = unquote(email)
+    
+    # Additional decoding to handle double encoding
+    decoded_email = unquote(decoded_email)
+    decoded_message = unquote(decoded_message)
+
+    print(f"Original email: {email}")
+    print(f"Decoded email: {decoded_email}")
+    print(f"Original message: {message}")
+    print(f"Decoded message: {decoded_message}")
+
+    # Validate email format
+    if not validate_email(decoded_email):
+        return jsonify({
+            "error": "Invalid email format. Email must be in format: name@domain.com",
+            "status": "bad_request",
+            "received_email": decoded_email
+        }), 400
 
     # Send message to Discord
     success = send_discord_message(decoded_email, decoded_message, bot_token)
