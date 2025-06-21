@@ -1,8 +1,8 @@
 from flask import Flask, jsonify, request
-import requests
 import json
 import os
-from datetime import datetime
+import requests
+from urllib.parse import unquote
 
 app = Flask(__name__)
 
@@ -12,42 +12,37 @@ def load_keys():
     try:
         with open('keys.json', 'r') as f:
             return json.load(f)
-    except:
+    except FileNotFoundError:
         return {"keys": []}
 
 
-# Discord bot token - you'll need to set this as environment variable
-DISCORD_BOT_TOKEN = os.environ.get('DISCORD_BOT_TOKEN')
+# Discord channel ID
 DISCORD_CHANNEL_ID = "1385836633227530380"
 
 
-def send_discord_embed(email, message):
-    """Send embed message to Discord channel"""
-    if not DISCORD_BOT_TOKEN:
-        return False, "Discord bot token not configured"
-
-    # Format message (replace \\ with actual line breaks)
+def send_discord_message(email, message, bot_token):
+    # Format message - replace \ with actual line breaks
     formatted_message = message.replace('\\', '\n')
 
     # Create embed
     embed = {
-        "title": "📧 New Message Received",
-        "description": formatted_message,
-        "color": 5814783,  # Blue color
+        "title": "📧 New Message",
+        "color": 0x00ff00,
         "fields": [
             {
-                "name": "📨 From Email",
+                "name": "📧 Email",
                 "value": email,
-                "inline": True
+                "inline": False
             },
             {
-                "name": "⏰ Timestamp",
-                "value": datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC"),
-                "inline": True
+                "name": "💬 Message",
+                "value": formatted_message,
+                "inline": False
             }
         ],
+        "timestamp": None,
         "footer": {
-            "text": "Message sent via API"
+            "text": "Customer Service API"
         }
     }
 
@@ -56,98 +51,75 @@ def send_discord_embed(email, message):
     }
 
     headers = {
-        "Authorization": f"Bot {DISCORD_BOT_TOKEN}",
+        "Authorization": f"Bot {bot_token}",
         "Content-Type": "application/json"
     }
 
-    url = f"https://discord.com/api/v10/channels/{DISCORD_CHANNEL_ID}/messages"
+    url = f"https://discord.com/api/v9/channels/{DISCORD_CHANNEL_ID}/messages"
 
     try:
         response = requests.post(url, json=payload, headers=headers)
-        if response.status_code == 200:
-            return True, "Message sent successfully"
-        else:
-            return False, f"Discord API error: {response.status_code}"
+        return response.status_code == 200
     except Exception as e:
-        return False, f"Request failed: {str(e)}"
+        print(f"Error sending Discord message: {e}")
+        return False
 
 
 @app.route('/')
 def home():
     return jsonify({
-        "status": "online",
+        "status": "active",
         "message": "Discord API is running",
         "usage": "/api/{key}/email-{email}/message-{message}"
     })
 
 
-@app.route('/api/<key>/email-<email>/message-<message>')
+@app.route('/api/<key>/email-<email>/message-<path:message>')
 def send_message(key, email, message):
-    """Send message to Discord channel"""
-
-    # Load and validate API key
+    # Load current keys
     keys_data = load_keys()
     valid_keys = keys_data.get("keys", [])
 
+    # Check if key is valid
     if key not in valid_keys:
         return jsonify({
-            "success": False,
-            "error": "Invalid API key"
+            "error": "Invalid API key",
+            "status": "unauthorized"
         }), 401
 
-    # Validate inputs
-    if not email or not message:
+    # Get Discord bot token from environment
+    bot_token = os.getenv('DISCORD_BOT_TOKEN')
+    if not bot_token:
         return jsonify({
-            "success": False,
-            "error": "Email and message are required"
-        }), 400
+            "error": "Discord bot token not configured",
+            "status": "server_error"
+        }), 500
 
-    # Send to Discord
-    success, result = send_discord_embed(email, message)
+    # Decode URL-encoded message
+    decoded_message = unquote(message)
+
+    # Send message to Discord
+    success = send_discord_message(email, decoded_message, bot_token)
 
     if success:
         return jsonify({
-            "success": True,
-            "message": result,
-            "data": {
-                "email": email,
-                "message": message.replace('\\', '\n'),
-                "channel_id": DISCORD_CHANNEL_ID
-            }
+            "status": "success",
+            "message": "Message sent to Discord",
+            "email": email,
+            "sent_message": decoded_message.replace('\\', '\n')
         })
     else:
         return jsonify({
-            "success": False,
-            "error": result
+            "error": "Failed to send message to Discord",
+            "status": "discord_error"
         }), 500
 
 
-@app.route('/api/health')
-def health_check():
-    """Health check endpoint"""
-    return jsonify({
-        "status": "healthy",
-        "timestamp": datetime.now().isoformat(),
-        "keys_loaded": len(load_keys().get("keys", []))
-    })
-
-
-# Error handlers
-@app.errorhandler(404)
-def not_found(error):
-    return jsonify({
-        "success": False,
-        "error": "Endpoint not found",
-        "usage": "/api/{key}/email-{email}/message-{message}"
-    }), 404
-
-
-@app.errorhandler(500)
-def internal_error(error):
-    return jsonify({
-        "success": False,
-        "error": "Internal server error"
-    }), 500
+@app.route('/keys', methods=['GET'])
+def get_keys():
+    """Admin endpoint to view current keys (remove in production)"""
+    keys_data = load_keys()
+    return jsonify(keys_data)
 
 
 if __name__ == '__main__':
