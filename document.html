@@ -12,7 +12,7 @@
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
-    <meta property="og:url" content="http://dms-api.mcboss.top/">
+    <meta property="og:url" content="https://dms-api.mcboss.top/">
     <meta property="og:title" content="🚀 Discord Message API - Ultra Secure & 100% FREE">
     <meta property="og:description" content="Send messages from your website directly to Discord channels. Military-grade URL authentication, lightning-fast delivery, beautiful embeds. Zero cost, maximum value!">
     <meta property="og:image:width" content="1200">
@@ -21,7 +21,7 @@
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="http://dms-api.mcboss.top/">
+    <meta property="twitter:url" content="https://dms-api.mcboss.top/">
     <meta property="twitter:title" content="🚀 Discord Message API - Ultra Secure & 100% FREE">
     <meta property="twitter:description" content="Send messages from your website directly to Discord channels. Military-grade URL authentication, lightning-fast delivery, beautiful embeds. Zero cost, maximum value!">
 
@@ -33,10 +33,10 @@
     <meta name="robots" content="index, follow">
     <meta name="language" content="English">
     <meta name="revisit-after" content="7 days">
-    <link rel="canonical" href="http://dms-api.mcboss.top/">
+    <link rel="canonical" href="https://dms-api.mcboss.top/">
 
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚀</text></svg>">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22https://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚀</text></svg>">
     <style>
         * {
             margin: 0;
@@ -478,7 +478,7 @@
                 <h3>Step 4: Configure Your Environment</h3>
                 <div class="code-title">Environment Setup</div>
                 <div class="code-block">
-                    <pre>Base URL: http://dms-api.mcboss.top/
+                    <pre>Base URL: https://dms-api.mcboss.top/
 
 Required Headers:
 - Origin: Your registered website URL
@@ -495,7 +495,7 @@ Required Headers:
 
                 <div class="code-title">Endpoint</div>
                 <div class="code-block">
-                    <pre>POST http://dms-api.mcboss.top/api/{your-api-key}/send</pre>
+                    <pre>POST https://dms-api.mcboss.top/api/{your-api-key}/send</pre>
                 </div>
 
                 <div class="code-title">Request Body (JSON)</div>
@@ -511,12 +511,12 @@ Required Headers:
 
                 <div class="code-title">Endpoint</div>
                 <div class="code-block">
-                    <pre>GET http://dms-api.mcboss.top/api/{key}/email-{email}/message-{message}</pre>
+                    <pre>GET https://dms-api.mcboss.top/api/{key}/email-{email}/message-{message}</pre>
                 </div>
 
                 <div class="code-title">Example</div>
                 <div class="code-block">
-                    <pre>http://dms-api.mcboss.top/api/your-key/email-john@example.com/message-Need%20help%20with%20my%20order</pre>
+                    <pre>https://dms-api.mcboss.top/api/your-key/email-john@example.com/message-Need%20help%20with%20my%20order</pre>
                 </div>
 
                 <h3>Response Format</h3>
@@ -583,7 +583,7 @@ Required Headers:
     const message = document.getElementById('message').value;
 
     try {
-        const response = await fetch('http://dms-api.mcboss.top/api/YOUR-API-KEY/send', {
+        const response = await fetch('https://dms-api.mcboss.top/api/YOUR-API-KEY/send', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -630,7 +630,7 @@ Required Headers:
     e.preventDefault();
 
     $.ajax({
-        url: 'http://dms-api.mcboss.top/api/YOUR-API-KEY/send',
+        url: 'https://dms-api.mcboss.top/api/YOUR-API-KEY/send',
         method: 'POST',
         contentType: 'application/json',
         data: JSON.stringify({
@@ -653,7 +653,7 @@ Required Headers:
                 <div class="code-block">
                     <pre>&lt;?php
 $apiKey = 'YOUR-API-KEY';
-$apiUrl = 'http://dms-api.mcboss.top/api/' . $apiKey . '/send';
+$apiUrl = 'https://dms-api.mcboss.top/api/' . $apiKey . '/send';
 
 $data = [
     'email' => $_POST['email'],
@@ -879,7 +879,7 @@ if ($response['status'] === 'success') {
                     <a href="#endpoints">API Endpoints</a>
                     <a href="#examples">Code Examples</a>
                     <a href="#security">Security Guide</a>
-                    <a href="http://dms-api.mcboss.top/" target="_blank">API Status</a>
+                    <a href="https://dms-api.mcboss.top/" target="_blank">API Status</a>
                 </div>
                 <div class="footer-section">
                     <h3>🤝 Community</h3>
@@ -897,7 +897,7 @@ if ($response['status'] === 'success') {
                 </div>
                 <div class="footer-section">
                     <h3>⚡ Quick Links</h3>
-                    <a href="http://dms-api.mcboss.top/validate/your-key" target="_blank">Validate Key</a>
+                    <a href="https://dms-api.mcboss.top/validate/your-key" target="_blank">Validate Key</a>
                     <a href="#" target="_blank">Status Page</a>
                     <a href="#security">Security Policy</a>
                 </div>
@@ -916,7 +916,7 @@ if ($response['status'] === 'success') {
                     </div>
                 </div>
                 <div style="text-align: center; margin-top: 1rem; color: #8b949e; font-size: 0.9rem;">
-                    Built with ❤️ for developers | Base URL: <code style="background: #21262d; padding: 0.25rem 0.5rem; border-radius: 4px;">http://dms-api.mcboss.top/</code>
+                    Built with ❤️ for developers | Base URL: <code style="background: #21262d; padding: 0.25rem 0.5rem; border-radius: 4px;">https://dms-api.mcboss.top/</code>
                 </div>
             </div>
         </div>
@@ -1103,7 +1103,7 @@ if ($response['status'] === 'success') {
         // API Status checker (optional enhancement)
         async function checkAPIStatus() {
             try {
-                const response = await fetch('http://dms-api.mcboss.top/', {
+                const response = await fetch('https://dms-api.mcboss.top/', {
                     method: 'GET',
                     mode: 'cors'
                 });
