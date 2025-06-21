@@ -550,5 +550,85 @@ def api_documentation():
         }), 500
 
 
+@app.route('/validate/<key>')
+def validate_key_from_url(key):
+    """Validate if current request origin is authorized for this key"""
+    origin = request.headers.get('Origin')
+    referer = request.headers.get('Referer')
+
+    is_valid, error_msg = validate_url_access(key, origin, referer)
+
+    if is_valid:
+        return jsonify({
+            "status": "authorized",
+            "message": "Request origin is authorized for this key",
+            "source": origin or referer
+        })
+    else:
+        return jsonify({
+            "status": "unauthorized",
+            "error": error_msg,
+            "source": origin or referer or "No origin/referer found"
+        }), 403
+
+
+@app.route('/invite-link')
+def get_bot_invite_link():
+    """Generate Discord bot invite link with required permissions"""
+
+    # Get Discord bot token
+    bot_token = os.getenv('DISCORD_BOT_TOKEN') or os.getenv('discord_bot_token')
+    if not bot_token:
+        return jsonify({
+            "error": "Discord bot token not configured",
+            "status": "server_error"
+        }), 500
+
+    # Get bot's application ID from the token or Discord API
+    try:
+        # Get bot info to extract application ID
+        headers = {
+            "Authorization": f"Bot {bot_token}",
+            "Content-Type": "application/json"
+        }
+
+        response = requests.get("https://discord.com/api/v9/oauth2/applications/@me", headers=headers)
+
+        if response.status_code == 200:
+            bot_info = response.json()
+            client_id = bot_info.get('id')
+            bot_name = bot_info.get('name', 'Unknown Bot')
+
+            # Required permissions for sending messages
+            # Send Messages (2048) + Read Message History (65536) + View Channel (1024) = 68608
+            permissions = 68608
+
+            # Generate invite link
+            invite_url = f"https://discord.com/api/oauth2/authorize?client_id={client_id}&permissions={permissions}&scope=bot"
+
+            return jsonify({
+                "status": "success",
+                "bot_name": bot_name,
+                "client_id": client_id,
+                "invite_url": invite_url,
+                "permissions": {
+                    "value": permissions,
+                    "description": "Send Messages, Read Message History, View Channel"
+                },
+                "instructions": "Click the invite URL to add the bot to your Discord server"
+            })
+        else:
+            return jsonify({
+                "error": "Failed to get bot information from Discord API",
+                "status": "discord_api_error",
+                "response_code": response.status_code
+            }), 500
+
+    except Exception as e:
+        return jsonify({
+            "error": f"Error generating invite link: {str(e)}",
+            "status": "server_error"
+        }), 500
+
 if __name__ == '__main__':
     app.run(debug=True)
