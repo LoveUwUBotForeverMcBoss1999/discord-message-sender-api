@@ -523,5 +523,24 @@ def handle_preflight():
         return response
 
 
+@app.route('/api-doc')
+def api_documentation():
+    """Serve the API documentation HTML page"""
+    try:
+        with open('document.html', 'r', encoding='utf-8') as f:
+            html_content = f.read()
+        return html_content, 200, {'Content-Type': 'text/html; charset=utf-8'}
+    except FileNotFoundError:
+        return jsonify({
+            "error": "Documentation file not found",
+            "status": "file_not_found"
+        }), 404
+    except Exception as e:
+        return jsonify({
+            "error": f"Error loading documentation: {str(e)}",
+            "status": "server_error"
+        }), 500
+
+
 if __name__ == '__main__':
     app.run(debug=True)
