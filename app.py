@@ -5,6 +5,8 @@ import os
 import requests
 import re
 from urllib.parse import unquote, urlparse
+from datetime import datetime
+import logging
 
 app = Flask(__name__)
 
@@ -17,6 +19,15 @@ CORS(app, resources={
     }
 })
 
+# Configure logging to file
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('api_usage.log'),
+        logging.StreamHandler()  # Also log to console
+    ]
+)
 
 # Load API keys
 def load_keys():
@@ -215,31 +226,45 @@ def send_discord_message(email, message, bot_token, channel_id, source_info=None
             return False
 
 
-def send_usage_log(api_key, bot_token):
-    """Send a usage log embed when API key is used"""
-    log_server_id = "1385931113389883422"
-    log_channel_id = "1385932108232658985"
-
-    url = f"https://discord.com/api/v9/channels/{log_channel_id}/messages"
-    headers = {
-        "Authorization": f"Bot {bot_token}",
-        "Content-Type": "application/json"
-    }
-
-    embed = {
-        "description": f"`{api_key}` got used now",
-        "color": 0x0099ff  # Blue color
-    }
-
-    payload = {"embeds": [embed]}
-
+def log_api_usage(api_key, email, source_info, endpoint_type="POST"):
+    """Log API usage to file and console"""
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    log_message = f"API_USAGE - Key: {api_key} | Email: {email} | Source: {source_info} | Type: {endpoint_type}"
+    
+    # Log to file and console
+    logging.info(log_message)
+    
+    # Also save to JSON log file for easier parsing
     try:
-        response = requests.post(url, json=payload, headers=headers)
-        print(f"Usage log response: {response.status_code}")  # Debug print
-        return response.status_code == 200
+        log_entry = {
+            "timestamp": timestamp,
+            "api_key": api_key,
+            "email": email,
+            "source": source_info,
+            "endpoint_type": endpoint_type
+        }
+        
+        # Read existing logs
+        try:
+            with open('api_usage.json', 'r') as f:
+                logs = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            logs = []
+        
+        # Add new log entry
+        logs.append(log_entry)
+        
+        # Keep only last 1000 entries to prevent file from getting too large
+        if len(logs) > 1000:
+            logs = logs[-1000:]
+        
+        # Save back to file
+        with open('api_usage.json', 'w') as f:
+            json.dump(logs, f, indent=2)
+            
     except Exception as e:
-        print(f"Error sending usage log: {e}")
-        return False
+        print(f"Error saving JSON log: {e}")
 
 
 @app.route('/')
@@ -340,8 +365,8 @@ def send_message_post(key):
     success = send_discord_message(email, message, bot_token, channel_id, source_info)
 
     if success:
-        # Send usage log ONLY after successful Discord message
-        send_usage_log(key, bot_token)
+        # Log the API usage
+        log_api_usage(key, email, source_info, "POST")
         
         return jsonify({
             "status": "success",
@@ -444,8 +469,8 @@ def send_message_get(key, email, message):
     success = send_discord_message(decoded_email, decoded_message, bot_token, channel_id, source_info)
 
     if success:
-        # Send usage log ONLY after successful Discord message
-        send_usage_log(key, bot_token)
+        # Log the API usage
+        log_api_usage(key, decoded_email, source_info, "GET")
         
         return jsonify({
             "status": "success",
@@ -545,6 +570,64 @@ def validate_key_from_url(key):
             "error": error_msg,
             "source": origin or referer or "No origin/referer found"
         }), 403
+
+
+@app.route('/logs')
+def view_logs():
+    """View recent API usage logs"""
+    try:
+        with open('api_usage.json', 'r') as f:
+            logs = json.load(f)
+        
+        # Return last 50 logs
+        recent_logs = logs[-50:] if len(logs) > 50 else logs
+        
+        return jsonify({
+            "status": "success",
+            "total_logs": len(logs),
+            "showing": len(recent_logs),
+            "logs": recent_logs
+        })
+    except FileNotFoundError:
+        return jsonify({
+            "status": "success",
+            "message": "No logs found yet",
+            "logs": []
+        })
+    except Exception as e:
+        return jsonify({
+            "error": f"Error reading logs: {str(e)}",
+            "status": "server_error"
+        }), 500
+
+
+@app.route('/logs/<key>')
+def view_key_logs(key):
+    """View logs for a specific API key"""
+    try:
+        with open('api_usage.json', 'r') as f:
+            logs = json.load(f)
+        
+        # Filter logs for specific key
+        key_logs = [log for log in logs if log.get('api_key') == key]
+        
+        return jsonify({
+            "status": "success",
+            "api_key": key,
+            "total_uses": len(key_logs),
+            "logs": key_logs
+        })
+    except FileNotFoundError:
+        return jsonify({
+            "status": "success",
+            "message": "No logs found yet",
+            "logs": []
+        })
+    except Exception as e:
+        return jsonify({
+            "error": f"Error reading logs: {str(e)}",
+            "status": "server_error"
+        }), 500
 
 
 # Handle preflight OPTIONS requests
