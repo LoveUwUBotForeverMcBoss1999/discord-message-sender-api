@@ -34,7 +34,7 @@ def load_keys():
 def send_usage_log(api_key, endpoint_type, user_email=None, source_url=None, status="success"):
     """
     Send usage log to Discord logging channel
-    
+
     Args:
         api_key: The API key that was used
         endpoint_type: Type of endpoint used (GET/POST)
@@ -51,13 +51,13 @@ def send_usage_log(api_key, endpoint_type, user_email=None, source_url=None, sta
 
         # Get current timestamp
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")
-        
+
         # Create status emoji
         status_emoji = "✅" if status == "success" else "❌"
-        
+
         # Prepare log message
-        log_description = f"```\n`{api_key}` Used right now\n```"
-        
+        log_description = f"\n`{api_key}` Used right now\n"
+
         # Add additional context
         context_info = []
         if endpoint_type:
@@ -68,7 +68,7 @@ def send_usage_log(api_key, endpoint_type, user_email=None, source_url=None, sta
             context_info.append(f"**Source:** {source_url}")
         context_info.append(f"**Status:** {status_emoji} {status.upper()}")
         context_info.append(f"**Time:** {timestamp}")
-        
+
         if context_info:
             log_description += "\n" + "\n".join(context_info)
 
@@ -87,18 +87,18 @@ def send_usage_log(api_key, endpoint_type, user_email=None, source_url=None, sta
             "Authorization": f"Bot {bot_token}",
             "Content-Type": "application/json"
         }
-        
+
         payload = {"embeds": [embed]}
-        
+
         response = requests.post(url, json=payload, headers=headers)
-        
+
         if response.status_code == 200:
             print(f"Usage log sent successfully for API key: {api_key}")
             return True
         else:
             print(f"Failed to send usage log. Status code: {response.status_code}")
             return False
-            
+
     except Exception as e:
         print(f"Error sending usage log: {e}")
         return False
@@ -497,7 +497,7 @@ def send_message_post(key):
     if success:
         # Log successful usage
         send_usage_log(key, "POST", user_email=email, source_url=source_info, status="success")
-        
+
         return jsonify({
             "status": "success",
             "message": "Message sent to Discord",
@@ -512,7 +512,7 @@ def send_message_post(key):
     else:
         # Log failed message sending
         send_usage_log(key, "POST", user_email=email, source_url=source_info, status="discord_error")
-        
+
         return jsonify({
             "error": "Failed to send message to Discord",
             "status": "discord_error",
@@ -624,7 +624,7 @@ def send_message_get(key, email, message):
     if success:
         # Log successful usage
         send_usage_log(key, "GET", user_email=decoded_email, source_url=source_info, status="success")
-        
+
         return jsonify({
             "status": "success",
             "message": "Message sent to Discord",
@@ -639,7 +639,7 @@ def send_message_get(key, email, message):
     else:
         # Log failed message sending
         send_usage_log(key, "GET", user_email=decoded_email, source_url=source_info, status="discord_error")
-        
+
         return jsonify({
             "error": "Failed to send message to Discord",
             "status": "discord_error",
@@ -832,13 +832,13 @@ def get_bot_invite_link():
 def test_log():
     """Test endpoint to verify logging functionality"""
     success = send_usage_log(
-        api_key="TEST_KEY", 
-        endpoint_type="GET", 
-        user_email="test@example.com", 
-        source_url="https://test.example.com", 
+        api_key="TEST_KEY",
+        endpoint_type="GET",
+        user_email="test@example.com",
+        source_url="https://test.example.com",
         status="test"
     )
-    
+
     return jsonify({
         "status": "success" if success else "failed",
         "message": "Test log sent" if success else "Failed to send test log",
