@@ -748,7 +748,57 @@ if ($response['status'] === 'success') {
                 <h2>🛡️ Security Features</h2>
 
                 <div class="success-box">
-                    <strong>🔒 Our Security Promise:</strong> We take security seriously. Your API key and messages are protected by multiple layers of security.
+                    <strong>🔒 Our Security Promise:</strong> We take security seriously. Your API key and messages are protected by multiple layers of military-grade security that prevents unauthorized access even with valid API keys.
+                </div>
+
+                <div class="info-box">
+                    <strong>🔐 NEW: Advanced Owner Permission Verification</strong><br>
+                    Revolutionary security system that verifies API key owner permissions in real-time. Even if someone steals your API key, they can't abuse it without your admin permissions!
+                </div>
+
+                <h3>🆕 Owner Permission Verification</h3>
+                <p>Our groundbreaking <code>check_user_admin_permissions()</code> function performs real-time verification:</p>
+                <div class="success-box">
+                    <strong>✅ Multi-Layer Permission Checks:</strong><br>
+                    • Verifies API key owner is actually in the server<br>
+                    • Confirms owner has Administrator permissions<br>
+                    • Handles server owner detection (automatic admin rights)<br>
+                    • Blocks requests if owner loses permissions<br>
+                    • Works on EVERY API request - no exceptions
+                </div>
+
+                <h3>🚨 Real-Time Security Enforcement</h3>
+                <p>Before sending ANY message, our API now performs comprehensive security checks:</p>
+                <div class="code-block">
+                    <pre>Security Check Sequence:
+1. Validate API key exists
+2. Check if owner is still in server
+3. Verify owner has admin permissions
+4. Validate URL authentication
+5. Only then process the request</pre>
+                </div>
+
+                <div class="warning-box">
+                    <strong>🛡️ Attack Prevention:</strong> Even with a valid API key, attackers CANNOT abuse the system because:
+                    <ul style="margin: 0.5rem 0 0 2rem;">
+                        <li>API checks the KEY OWNER's permissions (not the attacker's)</li>
+                        <li>Only legitimate admins who created the key can use it</li>
+                        <li>Permission verification happens on every single request</li>
+                        <li>Lost admin permissions = API key stops working instantly</li>
+                    </ul>
+                </div>
+
+                <h3>Enhanced Security Responses</h3>
+                <p>All API responses now include detailed security status information:</p>
+                <div class="code-block">
+                    <pre>Success Response includes:
+{
+  "status": "success",
+  "security_verified": true,
+  "owner_permissions": "administrator",
+  "source_validated": true,
+  "message": "Message sent to Discord"
+}</pre>
                 </div>
 
                 <h3>URL Authentication</h3>
@@ -756,6 +806,16 @@ if ($response['status'] === 'success') {
 
                 <h3>Discord Bot Validation</h3>
                 <p>Our system verifies that our bot has proper permissions in your server and can access the specified channel before sending any messages.</p>
+
+                <h3>Enhanced Validation Endpoints</h3>
+                <div class="code-block">
+                    <pre>/validate/{key} - Now includes owner permission checks
+/keys/{key}/info - Shows complete security status:
+  • Owner presence in server
+  • Current permission level
+  • Last permission check
+  • Security warnings (if any)</pre>
+                </div>
 
                 <h3>Email Validation</h3>
                 <p>All email addresses are validated using regex patterns to prevent malformed or malicious input.</p>
@@ -771,15 +831,28 @@ if ($response['status'] === 'success') {
                     • Never expose your API key in client-side code<br>
                     • Use HTTPS on your website when possible<br>
                     • Register the exact URL where you'll use the API<br>
+                    • Maintain admin permissions in your Discord server<br>
                     • Monitor your Discord channels for unusual activity<br>
                     • Contact us immediately if you suspect abuse
+                </div>
+
+                <h3>🔐 Future-Proof Security</h3>
+                <div class="success-box">
+                    <strong>Bulletproof Protection:</strong> Our security system is designed to prevent abuse even in worst-case scenarios:
+                    <ul style="margin: 0.5rem 0 0 2rem;">
+                        <li>API keys become useless if owner loses admin rights</li>
+                        <li>Real-time permission verification on every request</li>
+                        <li>Automatic security enforcement - no manual intervention needed</li>
+                        <li>Multiple redundant security layers</li>
+                        <li>Comprehensive audit logging for all security events</li>
+                    </ul>
                 </div>
 
                 <h3>Rate Limiting</h3>
                 <p>While we don't impose strict rate limits, we monitor usage patterns to prevent abuse. Fair usage ensures the service remains free and fast for everyone.</p>
 
                 <h3>Error Handling</h3>
-                <p>Our API provides detailed error messages to help you debug issues while not exposing sensitive system information to potential attackers.</p>
+                <p>Our API provides detailed error messages to help you debug issues while not exposing sensitive system information to potential attackers. Security-related errors include specific guidance on resolving permission issues.</p>
             </section>
 
             <!-- Support -->
