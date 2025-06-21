@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discord Message API - Documentation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0d1117;
+            color: #c9d1d9;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header */
+        .header {
+            background: #161b22;
+            border-bottom: 2px solid #21262d;
+            padding: 2rem 0;
+            text-align: center;
+        }
+
+        .logo {
+            font-size: 3rem;
+            font-weight: 700;
+            color: #58a6ff;
+            margin-bottom: 0.5rem;
+        }
+
+        .tagline {
+            font-size: 1.2rem;
+            color: #8b949e;
+            margin-bottom: 1rem;
+        }
+
+        .badges {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            background: #238636;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .badge.security {
+            background: #da3633;
+        }
+
+        .badge.free {
+            background: #1f6feb;
+        }
+
+        /* Navigation */
+        .nav {
+            background: #21262d;
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav ul {
+            list-style: none;
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .nav a {
+            color: #c9d1d9;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .nav a:hover {
+            background: #30363d;
+            color: #58a6ff;
+        }
+
+        /* Main Content */
+        .main {
+            padding: 3rem 0;
+        }
+
+        .section {
+            margin-bottom: 4rem;
+        }
+
+        .section h2 {
+            color: #f0f6fc;
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid #21262d;
+            padding-bottom: 0.5rem;
+        }
+
+        .section h3 {
+            color: #58a6ff;
+            font-size: 1.4rem;
+            margin: 2rem 0 1rem 0;
+        }
+
+        /* Code blocks */
+        .code-block {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            overflow-x: auto;
+        }
+
+        .code-block pre {
+            color: #c9d1d9;
+            font-family: 'Consolas', 'Monaco', monospace;
+            white-space: pre-wrap;
+        }
+
+        .code-title {
+            background: #21262d;
+            color: #58a6ff;
+            padding: 0.5rem 1rem;
+            border-radius: 6px 6px 0 0;
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: -1px;
+        }
+
+        /* Info boxes */
+        .info-box {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-left: 4px solid #58a6ff;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .warning-box {
+            border-left-color: #f85149;
+            background: #21161b;
+        }
+
+        .success-box {
+            border-left-color: #238636;
+            background: #0f1419;
+        }
+
+        /* Cards */
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .card {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 2rem;
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: #58a6ff;
+        }
+
+        .card h3 {
+            color: #58a6ff;
+            margin-top: 0;
+        }
+
+        .card-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-block;
+            background: #238636;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin: 0.5rem 0.5rem 0.5rem 0;
+        }
+
+        .btn:hover {
+            background: #2ea043;
+            transform: translateY(-2px);
+        }
+
+        .btn-primary {
+            background: #1f6feb;
+        }
+
+        .btn-primary:hover {
+            background: #388bfd;
+        }
+
+        .btn-danger {
+            background: #da3633;
+        }
+
+        .btn-danger:hover {
+            background: #f85149;
+        }
+
+        /* Response examples */
+        .response {
+            background: #0f1419;
+            border: 1px solid #238636;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
+        .response.error {
+            border-color: #f85149;
+            background: #21161b;
+        }
+
+        /* Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            background: #161b22;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        th, td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #30363d;
+        }
+
+        th {
+            background: #21262d;
+            color: #58a6ff;
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background: #21262d;
+        }
+
+        /* Footer */
+        .footer {
+            background: #161b22;
+            border-top: 2px solid #21262d;
+            padding: 3rem 0;
+            text-align: center;
+            margin-top: 4rem;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .footer-section h3 {
+            color: #58a6ff;
+            margin-bottom: 1rem;
+        }
+
+        .footer-section a {
+            color: #8b949e;
+            text-decoration: none;
+            display: block;
+            margin-bottom: 0.5rem;
+            transition: color 0.3s ease;
+        }
+
+        .footer-section a:hover {
+            color: #58a6ff;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav ul {
+                flex-direction: column;
+                align-items: center;
+                gap: 0.5rem;
+            }
+
+            .badges {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .logo {
+                font-size: 2rem;
+            }
+
+            .section h2 {
+                font-size: 1.5rem;
+            }
+
+            .cards {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Syntax highlighting */
+        .json { color: #79c0ff; }
+        .string { color: #a5d6ff; }
+        .number { color: #79c0ff; }
+        .boolean { color: #ff7b72; }
+        .null { color: #8b949e; }
+        .key { color: #7ee787; }
+
+        /* Loading animation */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .loading {
+            animation: pulse 2s infinite;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="logo">🚀 Discord Message API</div>
+            <div class="tagline">Send messages to Discord channels with enterprise-grade security</div>
+            <div class="badges">
+                <span class="badge free">100% FREE</span>
+                <span class="badge security">ULTRA SECURE</span>
+                <span class="badge">URL PROTECTED</span>
+                <span class="badge">REAL-TIME</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="container">
+            <ul>
+                <li><a href="#overview">Overview</a></li>
+                <li><a href="#setup">Setup</a></li>
+                <li><a href="#endpoints">API Endpoints</a></li>
+                <li><a href="#examples">Examples</a></li>
+                <li><a href="#use-cases">Use Cases</a></li>
+                <li><a href="#security">Security</a></li>
+                <li><a href="#support">Support</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main">
+        <div class="container">
+            <!-- Overview -->
+            <section id="overview" class="section">
+                <h2>🎯 Overview</h2>
+                <p>The Discord Message API is a powerful, secure service that allows you to send messages from your website or application directly to Discord channels. Perfect for contact forms, notifications, alerts, and customer support systems.</p>
+
+                <div class="info-box">
+                    <strong>🔥 Why This API Rocks:</strong><br>
+                    • Military-grade URL authentication<br>
+                    • Lightning-fast message delivery<br>
+                    • Beautiful Discord embeds<br>
+                    • Zero cost, maximum value<br>
+                    • Enterprise-level security
+                </div>
+
+                <div class="cards">
+                    <div class="card">
+                        <div class="card-icon">🛡️</div>
+                        <h3>Ultra Secure</h3>
+                        <p>Advanced URL validation ensures only authorized websites can send messages. Your API key is protected by our bulletproof security system.</p>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon">⚡</div>
+                        <h3>Lightning Fast</h3>
+                        <p>Messages are delivered instantly to your Discord channels with beautiful formatting and proper error handling.</p>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon">💰</div>
+                        <h3>Completely Free</h3>
+                        <p>No hidden costs, no rate limits for reasonable use. We believe great tools should be accessible to everyone.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Setup -->
+            <section id="setup" class="section">
+                <h2>🚀 Getting Started</h2>
+
+                <h3>Step 1: Add Our Bot to Your Server</h3>
+                <div class="info-box">
+                    <strong>📢 Important:</strong> Our Discord bot must be in your server to send messages to your channels.
+                </div>
+                <a href="#" class="btn btn-primary">🤖 Invite Discord Bot</a>
+
+                <h3>Step 2: Join Our Support Server</h3>
+                <p>Join our Discord server to register your API key and get support from our developers.</p>
+                <a href="#" class="btn">📋 Join Support Server</a>
+
+                <h3>Step 3: Create a Ticket & Register Your API Key</h3>
+                <div class="warning-box">
+                    <strong>⚠️ Registration Required:</strong> You must create a ticket in our Discord server and provide the following information to get your API key:
+                    <ul style="margin: 1rem 0 0 2rem;">
+                        <li>Your website URL (where you'll use the API)</li>
+                        <li>Discord server ID (where messages should be sent)</li>
+                        <li>Discord channel ID (specific channel for messages)</li>
+                        <li>Brief description of your use case</li>
+                    </ul>
+                </div>
+
+                <h3>Step 4: Configure Your Environment</h3>
+                <div class="code-title">Environment Setup</div>
+                <div class="code-block">
+                    <pre>Base URL: http://dms-api.mcboss.top/
+
+Required Headers:
+- Origin: Your registered website URL
+- Content-Type: application/json (for POST requests)</pre>
+                </div>
+            </section>
+
+            <!-- API Endpoints -->
+            <section id="endpoints" class="section">
+                <h2>📡 API Endpoints</h2>
+
+                <h3>1. POST /api/{key}/send</h3>
+                <p><strong>Recommended method for longer messages and better security</strong></p>
+
+                <div class="code-title">Endpoint</div>
+                <div class="code-block">
+                    <pre>POST http://dms-api.mcboss.top/api/{your-api-key}/send</pre>
+                </div>
+
+                <div class="code-title">Request Body (JSON)</div>
+                <div class="code-block">
+                    <pre>{
+  <span class="key">"email"</span>: <span class="string">"user@example.com"</span>,
+  <span class="key">"message"</span>: <span class="string">"Hello! This is my message to support."</span>
+}</pre>
+                </div>
+
+                <h3>2. GET /api/{key}/email-{email}/message-{message}</h3>
+                <p><strong>Simple GET method for basic implementations</strong></p>
+
+                <div class="code-title">Endpoint</div>
+                <div class="code-block">
+                    <pre>GET http://dms-api.mcboss.top/api/{key}/email-{email}/message-{message}</pre>
+                </div>
+
+                <div class="code-title">Example</div>
+                <div class="code-block">
+                    <pre>http://dms-api.mcboss.top/api/your-key/email-john@example.com/message-Need%20help%20with%20my%20order</pre>
+                </div>
+
+                <h3>Response Format</h3>
+
+                <div class="success-box">
+                    <strong>✅ Success Response (200)</strong>
+                    <div class="response">
+                        <pre>{
+  <span class="key">"status"</span>: <span class="string">"success"</span>,
+  <span class="key">"message"</span>: <span class="string">"Message sent to Discord"</span>,
+  <span class="key">"email"</span>: <span class="string">"user@example.com"</span>,
+  <span class="key">"sent_message"</span>: <span class="string">"Hello! This is my message."</span>,
+  <span class="key">"channel_id"</span>: <span class="string">"123456789"</span>,
+  <span class="key">"server_id"</span>: <span class="string">"987654321"</span>,
+  <span class="key">"source"</span>: <span class="string">"https://yourwebsite.com"</span>
+}</pre>
+                    </div>
+                </div>
+
+                <div class="warning-box">
+                    <strong>❌ Error Response (403/400/500)</strong>
+                    <div class="response error">
+                        <pre>{
+  <span class="key">"error"</span>: <span class="string">"Request must come from authorized URL"</span>,
+  <span class="key">"status"</span>: <span class="string">"unauthorized"</span>,
+  <span class="key">"security_note"</span>: <span class="string">"Request must come from authorized website"</span>
+}</pre>
+                    </div>
+                </div>
+
+                <h3>Validation Endpoints</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Endpoint</th>
+                            <th>Method</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>/validate/{key}</td>
+                            <td>GET</td>
+                            <td>Check if your URL is authorized for the API key</td>
+                        </tr>
+                        <tr>
+                            <td>/keys/{key}/info</td>
+                            <td>GET</td>
+                            <td>Get configuration info for your API key</td>
+                        </tr>
+                        <tr>
+                            <td>/debug</td>
+                            <td>GET</td>
+                            <td>Check server configuration (admin only)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- Examples -->
+            <section id="examples" class="section">
+                <h2>💻 Code Examples</h2>
+
+                <h3>JavaScript (Fetch API)</h3>
+                <div class="code-title">contact-form.js</div>
+                <div class="code-block">
+                    <pre>async function sendMessage() {
+    const email = document.getElementById('email').value;
+    const message = document.getElementById('message').value;
+
+    try {
+        const response = await fetch('http://dms-api.mcboss.top/api/YOUR-API-KEY/send', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                email: email,
+                message: message
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.status === 'success') {
+            alert('Message sent successfully!');
+        } else {
+            alert('Error: ' + result.error);
+        }
+    } catch (error) {
+        alert('Network error: ' + error.message);
+    }
+}</pre>
+                </div>
+
+                <h3>HTML Contact Form</h3>
+                <div class="code-title">contact.html</div>
+                <div class="code-block">
+                    <pre>&lt;form id="contactForm" onsubmit="sendMessage(); return false;"&gt;
+    &lt;div&gt;
+        &lt;label for="email"&gt;Email:&lt;/label&gt;
+        &lt;input type="email" id="email" required&gt;
+    &lt;/div&gt;
+    &lt;div&gt;
+        &lt;label for="message"&gt;Message:&lt;/label&gt;
+        &lt;textarea id="message" rows="5" required&gt;&lt;/textarea&gt;
+    &lt;/div&gt;
+    &lt;button type="submit"&gt;Send Message&lt;/button&gt;
+&lt;/form&gt;</pre>
+                </div>
+
+                <h3>jQuery Example</h3>
+                <div class="code-title">jquery-example.js</div>
+                <div class="code-block">
+                    <pre>$('#contactForm').submit(function(e) {
+    e.preventDefault();
+
+    $.ajax({
+        url: 'http://dms-api.mcboss.top/api/YOUR-API-KEY/send',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            email: $('#email').val(),
+            message: $('#message').val()
+        }),
+        success: function(response) {
+            alert('Message sent successfully!');
+        },
+        error: function(xhr) {
+            const error = JSON.parse(xhr.responseText);
+            alert('Error: ' + error.error);
+        }
+    });
+});</pre>
+                </div>
+
+                <h3>PHP Example</h3>
+                <div class="code-title">send-message.php</div>
+                <div class="code-block">
+                    <pre>&lt;?php
+$apiKey = 'YOUR-API-KEY';
+$apiUrl = 'http://dms-api.mcboss.top/api/' . $apiKey . '/send';
+
+$data = [
+    'email' => $_POST['email'],
+    'message' => $_POST['message']
+];
+
+$options = [
+    'http' => [
+        'header' => "Content-type: application/json\r\n",
+        'method' => 'POST',
+        'content' => json_encode($data)
+    ]
+];
+
+$context = stream_context_create($options);
+$result = file_get_contents($apiUrl, false, $context);
+$response = json_decode($result, true);
+
+if ($response['status'] === 'success') {
+    echo 'Message sent successfully!';
+} else {
+    echo 'Error: ' . $response['error'];
+}
+?&gt;</pre>
+                </div>
+            </section>
+
+            <!-- Use Cases -->
+            <section id="use-cases" class="section">
+                <h2>🎯 What You Can Build</h2>
+
+                <div class="cards">
+                    <div class="card">
+                        <div class="card-icon">📝</div>
+                        <h3>Contact Forms</h3>
+                        <p>Replace traditional email contact forms with instant Discord notifications. Perfect for support tickets and customer inquiries.</p>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon">🛒</div>
+                        <h3>E-commerce Alerts</h3>
+                        <p>Get notified instantly when customers place orders, abandon carts, or need support. Never miss a sale again.</p>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon">📊</div>
+                        <h3>System Monitoring</h3>
+                        <p>Send server alerts, error notifications, and system status updates directly to your Discord channels.</p>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon">🎮</div>
+                        <h3>Gaming Communities</h3>
+                        <p>Create registration forms, event signups, and community feedback systems that integrate with your Discord server.</p>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon">📚</div>
+                        <h3>Educational Platforms</h3>
+                        <p>Student submissions, assignment notifications, and teacher-student communication channels.</p>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon">💼</div>
+                        <h3>Business Applications</h3>
+                        <p>Lead generation forms, client feedback, appointment requests, and internal team notifications.</p>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon">🎨</div>
+                        <h3>Creative Projects</h3>
+                        <p>Portfolio contact forms, commission requests, collaboration inquiries, and project feedback systems.</p>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon">📈</div>
+                        <h3>Marketing Campaigns</h3>
+                        <p>Newsletter signups, survey responses, contest entries, and customer feedback collection.</p>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon">🔧</div>
+                        <h3>Technical Services</h3>
+                        <p>Bug reports, feature requests, maintenance notifications, and client support systems.</p>
+                    </div>
+                </div>
+
+                <div class="info-box">
+                    <strong>💡 Pro Tips for Implementation:</strong><br>
+                    • Use POST method for sensitive data and longer messages<br>
+                    • Implement client-side validation for better UX<br>
+                    • Add loading states and success/error feedback<br>
+                    • Consider rate limiting on your end for abuse prevention<br>
+                    • Use meaningful channel names for different types of messages
+                </div>
+            </section>
+
+            <!-- Security -->
+            <section id="security" class="section">
+                <h2>🛡️ Security Features</h2>
+
+                <div class="success-box">
+                    <strong>🔒 Our Security Promise:</strong> We take security seriously. Your API key and messages are protected by multiple layers of security.
+                </div>
+
+                <h3>URL Authentication</h3>
+                <p>Every request is validated against your registered URL. Only requests coming from your authorized website will be processed.</p>
+
+                <h3>Discord Bot Validation</h3>
+                <p>Our system verifies that our bot has proper permissions in your server and can access the specified channel before sending any messages.</p>
+
+                <h3>Email Validation</h3>
+                <p>All email addresses are validated using regex patterns to prevent malformed or malicious input.</p>
+
+                <h3>CORS Protection</h3>
+                <p>Cross-Origin Resource Sharing is properly configured to prevent unauthorized cross-domain requests.</p>
+
+                <h3>Source Logging</h3>
+                <p>Every message includes source information for audit trails and security monitoring.</p>
+
+                <div class="warning-box">
+                    <strong>⚠️ Security Best Practices:</strong><br>
+                    • Never expose your API key in client-side code<br>
+                    • Use HTTPS on your website when possible<br>
+                    • Register the exact URL where you'll use the API<br>
+                    • Monitor your Discord channels for unusual activity<br>
+                    • Contact us immediately if you suspect abuse
+                </div>
+
+                <h3>Rate Limiting</h3>
+                <p>While we don't impose strict rate limits, we monitor usage patterns to prevent abuse. Fair usage ensures the service remains free and fast for everyone.</p>
+
+                <h3>Error Handling</h3>
+                <p>Our API provides detailed error messages to help you debug issues while not exposing sensitive system information to potential attackers.</p>
+            </section>
+
+            <!-- Support -->
+            <section id="support" class="section">
+                <h2>🤝 Support & Community</h2>
+
+                <div class="cards">
+                    <div class="card">
+                        <div class="card-icon">💬</div>
+                        <h3>Discord Support</h3>
+                        <p>Join our Discord server for real-time help, API updates, and community discussions.</p>
+                        <a href="#" class="btn">Join Discord</a>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon">📝</div>
+                        <h3>Create Ticket</h3>
+                        <p>Need an API key or have specific issues? Create a support ticket and our developers will help you.</p>
+                        <a href="#" class="btn btn-primary">Create Ticket</a>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon">📖</div>
+                        <h3>Documentation</h3>
+                        <p>Detailed guides, examples, and troubleshooting information for all skill levels.</p>
+                        <a href="#overview" class="btn">Browse Docs</a>
+                    </div>
+                </div>
+
+                <h3>Common Issues & Solutions</h3>
+
+                <div class="info-box">
+                    <strong>🚫 "Request must come from authorized URL"</strong><br>
+                    This error means your request is not coming from the URL you registered. Make sure:
+                    <ul style="margin: 0.5rem 0 0 2rem;">
+                        <li>You're testing from the exact URL you registered</li>
+                        <li>Your URL includes the correct protocol (http/https)</li>
+                        <li>You haven't changed domains since registration</li>
+                    </ul>
+                </div>
+
+                <div class="info-box">
+                    <strong>🤖 "Bot is not in the server"</strong><br>
+                    Our Discord bot needs to be in your server. Use the invite link and make sure the bot has permission to:
+                    <ul style="margin: 0.5rem 0 0 2rem;">
+                        <li>Send Messages</li>
+                        <li>Embed Links</li>
+                        <li>Read Message History</li>
+                    </ul>
+                </div>
+
+                <div class="info-box">
+                    <strong>📧 "Invalid email format"</strong><br>
+                    Make sure the email address follows the standard format: name@domain.com
+                </div>
+
+                <h3>Response Times</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Issue Type</th>
+                            <th>Response Time</th>
+                            <th>Resolution Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>API Key Registration</td>
+                            <td>Within 1 hour</td>
+                            <td>Same day</td>
+                        </tr>
+                        <tr>
+                            <td>Technical Issues</td>
+                            <td>Within 2 hours</td>
+                            <td>1-2 days</td>
+                        </tr>
+                        <tr>
+                            <td>General Questions</td>
+                            <td>Within 4 hours</td>
+                            <td>Same day</td>
+                        </tr>
+                        <tr>
+                            <td>Feature Requests</td>
+                            <td>Within 24 hours</td>
+                            <td>1-2 weeks</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>🚀 API Resources</h3>
+                    <a href="#endpoints">API Endpoints</a>
+                    <a href="#examples">Code Examples</a>
+                    <a href="#security">Security Guide</a>
+                    <a href="http://dms-api.mcboss.top/" target="_blank">API Status</a>
+                </div>
+                <div class="footer-section">
+                    <h3>🤝 Community</h3>
+                    <a href="#" target="_blank">Discord Server</a>
+                    <a href="#" target="_blank">Create Support Ticket</a>
+                    <a href="#" target="_blank">Bot Invite Link</a>
+                    <a href="#support">Get Help</a>
+                </div>
+                <div class="footer-section">
+                    <h3>📚 Learn More</h3>
+                    <a href="#use-cases">Use Cases</a>
+                    <a href="#setup">Getting Started</a>
+                    <a href="#overview">Features</a>
+                    <a href="#examples">Implementation Guide</a>
+                </div>
+                <div class="footer-section">
+                    <h3>⚡ Quick Links</h3>
+                    <a href="http://dms-api.mcboss.top/debug" target="_blank">API Debug</a>
+                    <a href="http://dms-api.mcboss.top/validate/your-key" target="_blank">Validate Key</a>
+                    <a href="#" target="_blank">Status Page</a>
+                    <a href="#security">Security Policy</a>
+                </div>
+            </div>
+
+            <div style="border-top: 1px solid #30363d; padding-top: 2rem; margin-top: 2rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                    <div>
+                        <strong style="color: #58a6ff;">Discord Message API</strong> -
+                        <span style="color: #8b949e;">Connecting websites to Discord since 2024</span>
+                    </div>
+                    <div style="display: flex; gap: 1rem; align-items: center;">
+                        <span class="badge">API v1.0</span>
+                        <span class="badge free">100% Free</span>
+                        <span class="badge security">Ultra Secure</span>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 1rem; color: #8b949e; font-size: 0.9rem;">
+                    Built with ❤️ for developers | Base URL: <code style="background: #21262d; padding: 0.25rem 0.5rem; border-radius: 4px;">http://dms-api.mcboss.top/</code>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Add loading animation to buttons when clicked
+        document.querySelectorAll('.btn').forEach(button => {
+            button.addEventListener('click', function() {
+                if (!this.href || this.href.includes('#')) return;
+
+                this.style.opacity = '0.7';
+                this.style.transform = 'scale(0.98)';
+
+                setTimeout(() => {
+                    this.style.opacity = '1';
+                    this.style.transform = 'scale(1)';
+                }, 200);
+            });
+        });
+
+        // Highlight current section in navigation
+        window.addEventListener('scroll', () => {
+            const sections = document.querySelectorAll('.section');
+            const navLinks = document.querySelectorAll('.nav a');
+
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                const sectionHeight = section.clientHeight;
+                if (scrollY >= (sectionTop - 200)) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.style.background = '';
+                link.style.color = '#c9d1d9';
+                if (link.getAttribute('href') === `#${current}`) {
+                    link.style.background = '#30363d';
+                    link.style.color = '#58a6ff';
+                }
+            });
+        });
+
+        // Interactive code examples
+        document.querySelectorAll('.code-block pre').forEach(block => {
+            block.addEventListener('click', function() {
+                // Create a temporary textarea to copy text
+                const textarea = document.createElement('textarea');
+                textarea.value = this.textContent;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+
+                // Show feedback
+                const originalBg = this.parentElement.style.backgroundColor;
+                this.parentElement.style.backgroundColor = '#1f4e2e';
+                this.parentElement.style.border = '1px solid #238636';
+
+                setTimeout(() => {
+                    this.parentElement.style.backgroundColor = originalBg;
+                    this.parentElement.style.border = '1px solid #30363d';
+                }, 1000);
+
+                // Show tooltip
+                const tooltip = document.createElement('div');
+                tooltip.textContent = 'Copied to clipboard!';
+                tooltip.style.position = 'fixed';
+                tooltip.style.top = '20px';
+                tooltip.style.right = '20px';
+                tooltip.style.background = '#238636';
+                tooltip.style.color = 'white';
+                tooltip.style.padding = '0.5rem 1rem';
+                tooltip.style.borderRadius = '6px';
+                tooltip.style.zIndex = '1000';
+                tooltip.style.fontSize = '0.9rem';
+                tooltip.style.fontWeight = '600';
+                document.body.appendChild(tooltip);
+
+                setTimeout(() => {
+                    document.body.removeChild(tooltip);
+                }, 2000);
+            });
+
+            // Add click hint
+            block.style.cursor = 'pointer';
+            block.title = 'Click to copy';
+        });
+
+        // Add typing animation to the main title
+        const title = document.querySelector('.logo');
+        const text = title.textContent;
+        title.textContent = '';
+        let i = 0;
+
+        function typeWriter() {
+            if (i < text.length) {
+                title.textContent += text.charAt(i);
+                i++;
+                setTimeout(typeWriter, 100);
+            }
+        }
+
+        // Start typing animation after page load
+        window.addEventListener('load', () => {
+            setTimeout(typeWriter, 500);
+        });
+
+        // Add pulse animation to badges
+        document.querySelectorAll('.badge').forEach((badge, index) => {
+            badge.style.animationDelay = `${index * 0.2}s`;
+            badge.classList.add('loading');
+
+            setTimeout(() => {
+                badge.classList.remove('loading');
+            }, 3000);
+        });
+
+        // Easter egg: Konami code
+        let konamiCode = [];
+        const konamiSequence = [38, 38, 40, 40, 37, 39, 37, 39, 66, 65]; // Up Up Down Down Left Right Left Right B A
+
+        document.addEventListener('keydown', (e) => {
+            konamiCode.push(e.keyCode);
+            if (konamiCode.length > konamiSequence.length) {
+                konamiCode.shift();
+            }
+
+            if (konamiCode.length === konamiSequence.length &&
+                konamiCode.every((code, index) => code === konamiSequence[index])) {
+
+                // Activate easter egg
+                document.body.style.transform = 'rotate(360deg)';
+                document.body.style.transition = 'transform 2s ease';
+
+                setTimeout(() => {
+                    document.body.style.transform = '';
+                    alert('🎉 You found the secret! You are now a certified Discord API master!');
+                }, 2000);
+
+                konamiCode = [];
+            }
+        });
+
+        // Performance optimization: Lazy load images and animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        // Observe all cards for animation
+        document.querySelectorAll('.card').forEach(card => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            card.style.transition = 'all 0.6s ease';
+            observer.observe(card);
+        });
+
+        // API Status checker (optional enhancement)
+        async function checkAPIStatus() {
+            try {
+                const response = await fetch('http://dms-api.mcboss.top/', {
+                    method: 'GET',
+                    mode: 'cors'
+                });
+
+                const statusIndicator = document.createElement('div');
+                statusIndicator.style.position = 'fixed';
+                statusIndicator.style.bottom = '20px';
+                statusIndicator.style.right = '20px';
+                statusIndicator.style.padding = '0.5rem 1rem';
+                statusIndicator.style.borderRadius = '20px';
+                statusIndicator.style.fontSize = '0.8rem';
+                statusIndicator.style.fontWeight = '600';
+                statusIndicator.style.zIndex = '1000';
+
+                if (response.ok) {
+                    statusIndicator.textContent = '🟢 API Online';
+                    statusIndicator.style.background = '#238636';
+                    statusIndicator.style.color = 'white';
+                } else {
+                    statusIndicator.textContent = '🟡 API Issues';
+                    statusIndicator.style.background = '#fb8500';
+                    statusIndicator.style.color = 'white';
+                }
+
+                document.body.appendChild(statusIndicator);
+
+                // Remove after 5 seconds
+                setTimeout(() => {
+                    if (document.body.contains(statusIndicator)) {
+                        document.body.removeChild(statusIndicator);
+                    }
+                }, 5000);
+
+            } catch (error) {
+                const statusIndicator = document.createElement('div');
+                statusIndicator.textContent = '🔴 API Offline';
+                statusIndicator.style.position = 'fixed';
+                statusIndicator.style.bottom = '20px';
+                statusIndicator.style.right = '20px';
+                statusIndicator.style.background = '#da3633';
+                statusIndicator.style.color = 'white';
+                statusIndicator.style.padding = '0.5rem 1rem';
+                statusIndicator.style.borderRadius = '20px';
+                statusIndicator.style.fontSize = '0.8rem';
+                statusIndicator.style.fontWeight = '600';
+                statusIndicator.style.zIndex = '1000';
+
+                document.body.appendChild(statusIndicator);
+
+                setTimeout(() => {
+                    if (document.body.contains(statusIndicator)) {
+                        document.body.removeChild(statusIndicator);
+                    }
+                }, 5000);
+            }
+        }
+
+        // Check API status on page load
+        window.addEventListener('load', () => {
+            setTimeout(checkAPIStatus, 2000);
+        });
+    </script>
+</body>
+</html>
