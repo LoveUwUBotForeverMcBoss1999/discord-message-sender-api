@@ -1,8 +1,8 @@
 {
   "keys": [
-    "sk-1234567890abcdef",
-    "sk-feedback-key-2024",
-    "sk-customer-service-key",
-    "sk-my-website-contact-form"
+    "test-key-123",
+    "customer-service-key",
+    "feedback-key-456",
+    "support-key-789"
   ]
 }
