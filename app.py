@@ -24,7 +24,7 @@ def load_keys():
         with open('keys.json', 'r') as f:
             return json.load(f)
     except FileNotFoundError:
-        return {"keys": []}
+        return {"keys": {}}
 
 
 # Email validation function
@@ -35,15 +35,57 @@ def validate_email(email):
     return re.match(pattern, email) is not None
 
 
-# Discord channel ID
-DISCORD_CHANNEL_ID = "1385836633227530380"
+def check_bot_in_server(server_id, bot_token):
+    """Check if bot is in the specified server"""
+    url = f"https://discord.com/api/v9/guilds/{server_id}"
+    headers = {
+        "Authorization": f"Bot {bot_token}",
+        "Content-Type": "application/json"
+    }
+
+    try:
+        response = requests.get(url, headers=headers)
+        if response.status_code == 200:
+            return True
+        elif response.status_code == 403:
+            return False  # Bot not in server or no permission
+        elif response.status_code == 404:
+            return False  # Server not found
+        else:
+            return False
+    except Exception as e:
+        print(f"Error checking bot server access: {e}")
+        return False
 
 
-def send_discord_message(email, message, bot_token):
+def check_channel_access(channel_id, bot_token):
+    """Check if bot can access the specified channel"""
+    url = f"https://discord.com/api/v9/channels/{channel_id}"
+    headers = {
+        "Authorization": f"Bot {bot_token}",
+        "Content-Type": "application/json"
+    }
+
+    try:
+        response = requests.get(url, headers=headers)
+        if response.status_code == 200:
+            return True
+        elif response.status_code == 403:
+            return False  # No permission to access channel
+        elif response.status_code == 404:
+            return False  # Channel not found
+        else:
+            return False
+    except Exception as e:
+        print(f"Error checking bot channel access: {e}")
+        return False
+
+
+def send_discord_message(email, message, bot_token, channel_id):
     # Format message - replace \ with actual line breaks
     formatted_message = message.replace('\\', '\n')
-    
-    url = f"https://discord.com/api/v9/channels/{DISCORD_CHANNEL_ID}/messages"
+
+    url = f"https://discord.com/api/v9/channels/{channel_id}/messages"
     headers = {
         "Authorization": f"Bot {bot_token}",
         "Content-Type": "application/json"
@@ -59,16 +101,16 @@ def send_discord_message(email, message, bot_token):
                 "text": "Customer Service API"
             }
         }
-        
+
         payload = {"embeds": [embed]}
-        
+
         try:
             response = requests.post(url, json=payload, headers=headers)
             return response.status_code == 200
         except Exception as e:
             print(f"Error sending Discord message: {e}")
             return False
-    
+
     # For very long messages, send as multiple messages
     else:
         try:
@@ -81,28 +123,28 @@ def send_discord_message(email, message, bot_token):
                     "text": "Customer Service API"
                 }
             }
-            
+
             header_payload = {"embeds": [header_embed]}
             response = requests.post(url, json=header_payload, headers=headers)
-            
+
             if response.status_code != 200:
                 return False
-            
+
             # Send message content in chunks as regular messages (not embeds)
             chunk_size = 1900  # Discord message limit is 2000 chars
-            message_parts = [formatted_message[i:i+chunk_size] for i in range(0, len(formatted_message), chunk_size)]
-            
+            message_parts = [formatted_message[i:i + chunk_size] for i in range(0, len(formatted_message), chunk_size)]
+
             for i, part in enumerate(message_parts):
                 part_payload = {
                     "content": f"```\n{part}\n```"  # Use code block to preserve formatting
                 }
-                
+
                 response = requests.post(url, json=part_payload, headers=headers)
                 if response.status_code != 200:
                     return False
-            
+
             return True
-            
+
         except Exception as e:
             print(f"Error sending Discord message: {e}")
             return False
@@ -113,7 +155,8 @@ def home():
     return jsonify({
         "status": "active",
         "message": "Discord API is running",
-        "usage": "/api/{key}/email-{email}/message-{message}"
+        "usage": "/api/{key}/email-{email}/message-{message}",
+        "post_usage": "/api/{key}/send"
     })
 
 
@@ -122,7 +165,7 @@ def send_message_post(key):
     """POST endpoint for longer messages"""
     # Load current keys
     keys_data = load_keys()
-    valid_keys = keys_data.get("keys", [])
+    valid_keys = keys_data.get("keys", {})
 
     # Check if key is valid
     if key not in valid_keys:
@@ -131,6 +174,17 @@ def send_message_post(key):
             "status": "unauthorized"
         }), 401
 
+    # Get key configuration
+    key_config = valid_keys[key]
+    channel_id = key_config.get("channel_id")
+    server_id = key_config.get("server_id")
+
+    if not channel_id or not server_id:
+        return jsonify({
+            "error": "Key configuration incomplete - missing channel_id or server_id",
+            "status": "server_error"
+        }), 500
+
     # Get Discord bot token from environment (check both cases)
     bot_token = os.getenv('DISCORD_BOT_TOKEN') or os.getenv('discord_bot_token')
     if not bot_token:
@@ -138,6 +192,22 @@ def send_message_post(key):
             "error": "Discord bot token not configured",
             "status": "server_error"
         }), 500
+
+    # Check if bot is in the server
+    if not check_bot_in_server(server_id, bot_token):
+        return jsonify({
+            "error": f"Bot is not in the server (ID: {server_id}) or lacks permissions",
+            "status": "bot_access_error",
+            "server_id": server_id
+        }), 403
+
+    # Check if bot can access the channel
+    if not check_channel_access(channel_id, bot_token):
+        return jsonify({
+            "error": f"Bot cannot access the channel (ID: {channel_id}) or channel doesn't exist",
+            "status": "channel_access_error",
+            "channel_id": channel_id
+        }), 403
 
     # Get data from JSON body
     data = request.get_json()
@@ -164,19 +234,22 @@ def send_message_post(key):
         }), 400
 
     # Send message to Discord
-    success = send_discord_message(email, message, bot_token)
+    success = send_discord_message(email, message, bot_token, channel_id)
 
     if success:
         return jsonify({
             "status": "success",
             "message": "Message sent to Discord",
             "email": email,
-            "sent_message": message.replace('\\', '\n')
+            "sent_message": message.replace('\\', '\n'),
+            "channel_id": channel_id,
+            "server_id": server_id
         })
     else:
         return jsonify({
             "error": "Failed to send message to Discord",
-            "status": "discord_error"
+            "status": "discord_error",
+            "channel_id": channel_id
         }), 500
 
 
@@ -184,7 +257,7 @@ def send_message_post(key):
 def send_message_get(key, email, message):
     # Load current keys
     keys_data = load_keys()
-    valid_keys = keys_data.get("keys", [])
+    valid_keys = keys_data.get("keys", {})
 
     # Check if key is valid
     if key not in valid_keys:
@@ -192,6 +265,17 @@ def send_message_get(key, email, message):
             "error": "Invalid API key",
             "status": "unauthorized"
         }), 401
+
+    # Get key configuration
+    key_config = valid_keys[key]
+    channel_id = key_config.get("channel_id")
+    server_id = key_config.get("server_id")
+
+    if not channel_id or not server_id:
+        return jsonify({
+            "error": "Key configuration incomplete - missing channel_id or server_id",
+            "status": "server_error"
+        }), 500
 
     # Get Discord bot token from environment (check both cases)
     bot_token = os.getenv('DISCORD_BOT_TOKEN') or os.getenv('discord_bot_token')
@@ -201,10 +285,26 @@ def send_message_get(key, email, message):
             "status": "server_error"
         }), 500
 
+    # Check if bot is in the server
+    if not check_bot_in_server(server_id, bot_token):
+        return jsonify({
+            "error": f"Bot is not in the server (ID: {server_id}) or lacks permissions",
+            "status": "bot_access_error",
+            "server_id": server_id
+        }), 403
+
+    # Check if bot can access the channel
+    if not check_channel_access(channel_id, bot_token):
+        return jsonify({
+            "error": f"Bot cannot access the channel (ID: {channel_id}) or channel doesn't exist",
+            "status": "channel_access_error",
+            "channel_id": channel_id
+        }), 403
+
     # Decode URL-encoded message and email
     decoded_message = unquote(message)
     decoded_email = unquote(email)
-    
+
     # Additional decoding to handle double encoding
     decoded_email = unquote(decoded_email)
     decoded_message = unquote(decoded_message)
@@ -223,19 +323,22 @@ def send_message_get(key, email, message):
         }), 400
 
     # Send message to Discord
-    success = send_discord_message(decoded_email, decoded_message, bot_token)
+    success = send_discord_message(decoded_email, decoded_message, bot_token, channel_id)
 
     if success:
         return jsonify({
             "status": "success",
             "message": "Message sent to Discord",
             "email": decoded_email,
-            "sent_message": decoded_message.replace('\\', '\n')
+            "sent_message": decoded_message.replace('\\', '\n'),
+            "channel_id": channel_id,
+            "server_id": server_id
         })
     else:
         return jsonify({
             "error": "Failed to send message to Discord",
-            "status": "discord_error"
+            "status": "discord_error",
+            "channel_id": channel_id
         }), 500
 
 
@@ -257,6 +360,45 @@ def get_keys():
     """Admin endpoint to view current keys (remove in production)"""
     keys_data = load_keys()
     return jsonify(keys_data)
+
+
+@app.route('/keys/<key>/info', methods=['GET'])
+def get_key_info(key):
+    """Get information about a specific key"""
+    keys_data = load_keys()
+    valid_keys = keys_data.get("keys", {})
+
+    if key not in valid_keys:
+        return jsonify({
+            "error": "Invalid API key",
+            "status": "unauthorized"
+        }), 401
+
+    key_config = valid_keys[key]
+
+    # Get Discord bot token for validation
+    bot_token = os.getenv('DISCORD_BOT_TOKEN') or os.getenv('discord_bot_token')
+    if not bot_token:
+        return jsonify({
+            "error": "Discord bot token not configured",
+            "status": "server_error"
+        }), 500
+
+    channel_id = key_config.get("channel_id")
+    server_id = key_config.get("server_id")
+
+    # Check access
+    server_access = check_bot_in_server(server_id, bot_token) if server_id else False
+    channel_access = check_channel_access(channel_id, bot_token) if channel_id else False
+
+    return jsonify({
+        "key": key,
+        "config": key_config,
+        "access_status": {
+            "server_access": server_access,
+            "channel_access": channel_access
+        }
+    })
 
 
 # Handle preflight OPTIONS requests
