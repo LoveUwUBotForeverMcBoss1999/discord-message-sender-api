@@ -243,6 +243,12 @@ def send_message_post(key):
             "security_note": "Request must come from authorized website"
         }), 403
 
+    # Get Discord bot token from environment (check both cases)
+    bot_token = os.getenv('DISCORD_BOT_TOKEN') or os.getenv('discord_bot_token')
+
+    # ADD THIS LINE HERE:
+    send_usage_log(key, bot_token)  # Log API usage
+
     # Load current keys
     keys_data = load_keys()
     valid_keys = keys_data.get("keys", {})
@@ -322,6 +328,10 @@ def send_message_post(key):
             "server_id": server_id,
             "source": source_info
         })
+
+        # Send usage log
+        send_usage_log(key, bot_token)
+
     else:
         return jsonify({
             "error": "Failed to send message to Discord",
@@ -346,6 +356,12 @@ def send_message_get(key, email, message):
             "status": "unauthorized",
             "security_note": "Request must come from authorized website"
         }), 403
+
+    # Get Discord bot token from environment (check both cases)
+    bot_token = os.getenv('DISCORD_BOT_TOKEN') or os.getenv('discord_bot_token')
+
+    # ADD THIS LINE HERE:
+    send_usage_log(key, bot_token)  # Log API usage
 
     # Load current keys
     keys_data = load_keys()
@@ -423,6 +439,10 @@ def send_message_get(key, email, message):
             "server_id": server_id,
             "source": source_info
         })
+
+        # Send usage log
+        send_usage_log(key, bot_token)
+
     else:
         return jsonify({
             "error": "Failed to send message to Discord",
@@ -521,6 +541,32 @@ def handle_preflight():
         response.headers.add('Access-Control-Allow-Headers', "*")
         response.headers.add('Access-Control-Allow-Methods', "*")
         return response
+
+
+def send_usage_log(api_key, bot_token):
+    """Send a usage log embed when API key is used"""
+    log_server_id = "1385931113389883422"
+    log_channel_id = "1385932108232658985"
+
+    url = f"https://discord.com/api/v9/channels/{log_channel_id}/messages"
+    headers = {
+        "Authorization": f"Bot {bot_token}",
+        "Content-Type": "application/json"
+    }
+
+    embed = {
+        "description": f"`{api_key}` got used now",
+        "color": 0x0099ff  # Blue color
+    }
+
+    payload = {"embeds": [embed]}
+
+    try:
+        response = requests.post(url, json=payload, headers=headers)
+        return response.status_code == 200
+    except Exception as e:
+        print(f"Error sending usage log: {e}")
+        return False
 
 
 @app.route('/api-doc')
