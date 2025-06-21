@@ -517,61 +517,6 @@ def validate_key_from_url(key):
         }), 403
 
 
-
-
-
-# Handle preflight OPTIONS requests
-@app.before_request
-def handle_preflight():
-    if request.method == "OPTIONS":
-        response = jsonify({})
-        response.headers.add("Access-Control-Allow-Origin", "*")
-        response.headers.add('Access-Control-Allow-Headers', "*")
-        response.headers.add('Access-Control-Allow-Methods', "*")
-        return response
-
-
-@app.route('/api-doc')
-def api_documentation():
-    """Serve the API documentation HTML page"""
-    try:
-        with open('document.html', 'r', encoding='utf-8') as f:
-            html_content = f.read()
-        return html_content, 200, {'Content-Type': 'text/html; charset=utf-8'}
-    except FileNotFoundError:
-        return jsonify({
-            "error": "Documentation file not found",
-            "status": "file_not_found"
-        }), 404
-    except Exception as e:
-        return jsonify({
-            "error": f"Error loading documentation: {str(e)}",
-            "status": "server_error"
-        }), 500
-
-
-@app.route('/validate/<key>')
-def validate_key_from_url(key):
-    """Validate if current request origin is authorized for this key"""
-    origin = request.headers.get('Origin')
-    referer = request.headers.get('Referer')
-
-    is_valid, error_msg = validate_url_access(key, origin, referer)
-
-    if is_valid:
-        return jsonify({
-            "status": "authorized",
-            "message": "Request origin is authorized for this key",
-            "source": origin or referer
-        })
-    else:
-        return jsonify({
-            "status": "unauthorized",
-            "error": error_msg,
-            "source": origin or referer or "No origin/referer found"
-        }), 403
-
-
 @app.route('/invite-link')
 def get_bot_invite_link():
     """Generate Discord bot invite link with required permissions"""
@@ -629,6 +574,39 @@ def get_bot_invite_link():
             "error": f"Error generating invite link: {str(e)}",
             "status": "server_error"
         }), 500
+
+
+# Handle preflight OPTIONS requests
+@app.before_request
+def handle_preflight():
+    if request.method == "OPTIONS":
+        response = jsonify({})
+        response.headers.add("Access-Control-Allow-Origin", "*")
+        response.headers.add('Access-Control-Allow-Headers', "*")
+        response.headers.add('Access-Control-Allow-Methods', "*")
+        return response
+
+
+@app.route('/api-doc')
+def api_documentation():
+    """Serve the API documentation HTML page"""
+    try:
+        with open('document.html', 'r', encoding='utf-8') as f:
+            html_content = f.read()
+        return html_content, 200, {'Content-Type': 'text/html; charset=utf-8'}
+    except FileNotFoundError:
+        return jsonify({
+            "error": "Documentation file not found",
+            "status": "file_not_found"
+        }), 404
+    except Exception as e:
+        return jsonify({
+            "error": f"Error loading documentation: {str(e)}",
+            "status": "server_error"
+        }), 500
+
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)
