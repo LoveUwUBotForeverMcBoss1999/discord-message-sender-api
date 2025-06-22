@@ -706,11 +706,30 @@ def send_message_get_with_id(key, email, message, discord_id):
 
 @app.route('/keys/<key>/info', methods=['GET'])
 def get_key_info(key):
-    """Get information about a specific key with security validation"""
+    """Get information about a specific key with security validation and URL authorization"""
+
+    # Get origin and referer from headers
+    origin = request.headers.get('Origin')
+    referer = request.headers.get('Referer')
+    source_info = origin or referer or "Unknown"
+
+    # 🔐 CRITICAL: Validate URL access first - this was missing!
+    is_valid, error_msg = validate_url_access(key, origin, referer)
+    if not is_valid:
+        # Log unauthorized attempt
+        send_usage_log(key, "GET", source_url=source_info, status="unauthorized")
+        return jsonify({
+            "error": error_msg,
+            "status": "unauthorized",
+            "security_note": "Request must come from authorized website"
+        }), 403
+
     keys_data = load_keys()
     valid_keys = keys_data.get("keys", {})
 
     if key not in valid_keys:
+        # Log invalid key attempt
+        send_usage_log(key, "GET", source_url=source_info, status="invalid_key")
         return jsonify({
             "error": "Invalid API key",
             "status": "unauthorized"
@@ -721,6 +740,7 @@ def get_key_info(key):
     # Get Discord bot token for validation
     bot_token = os.getenv('DISCORD_BOT_TOKEN') or os.getenv('discord_bot_token')
     if not bot_token:
+        send_usage_log(key, "GET", source_url=source_info, status="token_error")
         return jsonify({
             "error": "Discord bot token not configured",
             "status": "server_error"
@@ -739,6 +759,20 @@ def get_key_info(key):
                                                           bot_token) if owner_id and server_id else (False,
                                                                                                      "Missing owner_id or server_id")
 
+    # 🔐 SECURITY CHECK: Verify API owner has admin permissions
+    if not has_admin:
+        send_usage_log(key, "GET", source_url=source_info, status="permission_denied")
+        return jsonify({
+            "error": f"API owner does not have administrator permissions in server: {admin_error}",
+            "status": "permission_denied",
+            "owner_id": owner_id,
+            "server_id": server_id,
+            "security_note": "Only users with administrator permissions can access API key info"
+        }), 403
+
+    # Log successful access
+    send_usage_log(key, "GET", source_url=source_info, status="success")
+
     return jsonify({
         "key": key,
         "owner_id": owner_id,
@@ -753,7 +787,9 @@ def get_key_info(key):
         "logging": {
             "enabled": True,
             "log_channel": LOG_CHANNEL_ID
-        }
+        },
+        "source": source_info,
+        "security_verified": "Request authorized from registered URL and owner has admin permissions"
     })
 
 
