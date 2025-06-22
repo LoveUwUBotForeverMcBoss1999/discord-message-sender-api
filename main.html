@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 Discord Message API - Connect Your Website to Discord</title>
+    <meta name="description" content="Send messages from your website directly to Discord channels. 100% FREE, ultra-secure, and lightning-fast API for contact forms, notifications, and more.">
+    <meta name="keywords" content="Discord API, message API, contact form, Discord bot, free API, webhook, notifications">
+    <meta property="og:title" content="🚀 Discord Message API - Ultra Secure & 100% FREE">
+    <meta property="og:description" content="Connect your website to Discord with our powerful API. Perfect for contact forms, notifications, and customer support.">
+    <meta property="og:url" content="https://dms-api.mcboss.top/">
+    <meta name="theme-color" content="#58a6ff">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚀</text></svg>">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0d1117 0%, #161b22 50%, #21262d 100%);
+            color: #c9d1d9;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            position: relative;
+            background: radial-gradient(circle at 50% 50%, rgba(88, 166, 255, 0.1) 0%, transparent 50%);
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><radialGradient id="a"><stop offset="0" stop-color="%23ffffff" stop-opacity="0.1"/><stop offset="1" stop-color="%23ffffff" stop-opacity="0"/></radialGradient></defs><circle cx="50" cy="50" r="50" fill="url(%23a)"/></svg>') repeat;
+            opacity: 0.03;
+            animation: float 20s infinite linear;
+        }
+
+        @keyframes float {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            100% { transform: translate(-100px, -100px) rotate(360deg); }
+        }
+
+        .hero-content {
+            text-align: center;
+            z-index: 2;
+            position: relative;
+        }
+
+        .hero h1 {
+            font-size: clamp(3rem, 8vw, 6rem);
+            font-weight: 900;
+            background: linear-gradient(45deg, #58a6ff, #7c3aed, #f59e0b);
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradient 3s ease-in-out infinite;
+            margin-bottom: 1rem;
+            text-shadow: 0 0 30px rgba(88, 166, 255, 0.3);
+        }
+
+        @keyframes gradient {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .hero p {
+            font-size: clamp(1.2rem, 3vw, 1.5rem);
+            margin-bottom: 2rem;
+            color: #8b949e;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .hero-badges {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 3rem;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            background: rgba(88, 166, 255, 0.1);
+            border: 1px solid rgba(88, 166, 255, 0.3);
+            color: #58a6ff;
+            padding: 0.7rem 1.5rem;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            animation: pulse 2s infinite;
+        }
+
+        .badge:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(88, 166, 255, 0.3);
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #1f6feb, #388bfd);
+            color: white;
+            box-shadow: 0 10px 30px rgba(31, 111, 235, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(31, 111, 235, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #c9d1d9;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-3px);
+        }
+
+        /* Features Section */
+        .features {
+            padding: 6rem 0;
+            background: rgba(22, 27, 34, 0.5);
+            backdrop-filter: blur(20px);
+        }
+
+        .features h2 {
+            text-align: center;
+            font-size: 3rem;
+            margin-bottom: 3rem;
+            color: #f0f6fc;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+        }
+
+        .feature-card {
+            background: rgba(22, 27, 34, 0.8);
+            border: 1px solid rgba(48, 54, 61, 0.5);
+            border-radius: 20px;
+            padding: 2.5rem;
+            text-align: center;
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #58a6ff, #7c3aed, #f59e0b);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            border-color: rgba(88, 166, 255, 0.5);
+            box-shadow: 0 20px 50px rgba(88, 166, 255, 0.1);
+        }
+
+        .feature-icon {
+            font-size: 3.5rem;
+            margin-bottom: 1.5rem;
+            display: block;
+        }
+
+        .feature-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #58a6ff;
+        }
+
+        /* Use Cases Section */
+        .use-cases {
+            padding: 6rem 0;
+            background: linear-gradient(135deg, rgba(124, 58, 237, 0.1) 0%, rgba(88, 166, 255, 0.1) 100%);
+        }
+
+        .use-cases h2 {
+            text-align: center;
+            font-size: 3rem;
+            margin-bottom: 3rem;
+            color: #f0f6fc;
+        }
+
+        .use-cases-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .use-case {
+            background: rgba(13, 17, 23, 0.8);
+            border-radius: 15px;
+            padding: 2rem;
+            border: 1px solid rgba(48, 54, 61, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .use-case:hover {
+            transform: scale(1.02);
+            border-color: rgba(88, 166, 255, 0.5);
+        }
+
+        .use-case-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Getting Started Section */
+        .getting-started {
+            padding: 6rem 0;
+            background: rgba(22, 27, 34, 0.5);
+        }
+
+        .getting-started h2 {
+            text-align: center;
+            font-size: 3rem;
+            margin-bottom: 3rem;
+            color: #f0f6fc;
+        }
+
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .step {
+            background: rgba(13, 17, 23, 0.8);
+            border-radius: 15px;
+            padding: 2rem;
+            border: 1px solid rgba(48, 54, 61, 0.3);
+            position: relative;
+            text-align: center;
+        }
+
+        .step-number {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(45deg, #1f6feb, #388bfd);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        /* Special Thanks Section */
+        .special-thanks {
+            padding: 6rem 0;
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(239, 68, 68, 0.1) 100%);
+            text-align: center;
+        }
+
+        .thanks-card {
+            background: rgba(13, 17, 23, 0.9);
+            border-radius: 20px;
+            padding: 3rem;
+            max-width: 600px;
+            margin: 0 auto;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .thanks-card h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+            color: #f59e0b;
+        }
+
+        .thanks-card p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            color: #d1d5db;
+        }
+
+        /* Footer */
+        .footer {
+            background: #0d1117;
+            padding: 3rem 0;
+            text-align: center;
+            border-top: 1px solid rgba(48, 54, 61, 0.3);
+        }
+
+        .footer-content {
+            margin-bottom: 2rem;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+            margin-bottom: 2rem;
+        }
+
+        .footer-links a {
+            color: #8b949e;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: #58a6ff;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .hero p {
+                font-size: 1.1rem;
+            }
+
+            .features h2,
+            .use-cases h2,
+            .getting-started h2 {
+                font-size: 2rem;
+            }
+
+            .cta-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .features-grid,
+            .use-cases-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Animations */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.6s ease;
+        }
+
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Scroll indicator */
+        .scroll-indicator {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: rgba(88, 166, 255, 0.2);
+            z-index: 1000;
+        }
+
+        .scroll-progress {
+            height: 100%;
+            background: linear-gradient(90deg, #58a6ff, #7c3aed);
+            width: 0%;
+            transition: width 0.1s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="scroll-indicator">
+        <div class="scroll-progress"></div>
+    </div>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <h1>Discord Message API</h1>
+                <p>Connect your website to Discord with our powerful, secure, and completely free API. Perfect for contact forms, notifications, and customer support.</p>
+
+                <div class="hero-badges">
+                    <span class="badge">🆓 100% FREE</span>
+                    <span class="badge">🛡️ ULTRA SECURE</span>
+                    <span class="badge">⚡ LIGHTNING FAST</span>
+                    <span class="badge">🔗 URL PROTECTED</span>
+                </div>
+
+                <div class="cta-buttons">
+                    <a href="https://discord.gg/U2G5ab6uaK" class="btn btn-primary">
+                        🚀 Get Started Free
+                    </a>
+                    <a href="https://dms-api.mcboss.top/api-doc" class="btn btn-secondary">
+                        📖 View Documentation
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features">
+        <div class="container">
+            <h2 class="fade-in">Why Choose Our API?</h2>
+            <div class="features-grid">
+                <div class="feature-card fade-in">
+                    <span class="feature-icon">🛡️</span>
+                    <h3>Military-Grade Security</h3>
+                    <p>Advanced URL validation and real-time permission verification ensure only authorized websites can send messages.</p>
+                </div>
+                <div class="feature-card fade-in">
+                    <span class="feature-icon">⚡</span>
+                    <h3>Instant Delivery</h3>
+                    <p>Messages are delivered instantly to your Discord channels with beautiful formatting and proper error handling.</p>
+                </div>
+                <div class="feature-card fade-in">
+                    <span class="feature-icon">💰</span>
+                    <h3>Completely Free</h3>
+                    <p>No hidden costs, no rate limits for reasonable use. We believe great tools should be accessible to everyone.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Use Cases Section -->
+    <section class="use-cases">
+        <div class="container">
+            <h2 class="fade-in">Perfect For</h2>
+            <div class="use-cases-grid">
+                <div class="use-case fade-in">
+                    <div class="use-case-icon">📝</div>
+                    <h3>Contact Forms</h3>
+                    <p>Replace traditional email forms with instant Discord notifications</p>
+                </div>
+                <div class="use-case fade-in">
+                    <div class="use-case-icon">🛒</div>
+                    <h3>E-commerce Alerts</h3>
+                    <p>Get notified when customers place orders or need support</p>
+                </div>
+                <div class="use-case fade-in">
+                    <div class="use-case-icon">📊</div>
+                    <h3>System Monitoring</h3>
+                    <p>Send server alerts and system status updates</p>
+                </div>
+                <div class="use-case fade-in">
+                    <div class="use-case-icon">🎮</div>
+                    <h3>Gaming Communities</h3>
+                    <p>Create registration forms and event signups</p>
+                </div>
+                <div class="use-case fade-in">
+                    <div class="use-case-icon">📚</div>
+                    <h3>Educational Platforms</h3>
+                    <p>Student submissions and teacher communications</p>
+                </div>
+                <div class="use-case fade-in">
+                    <div class="use-case-icon">💼</div>
+                    <h3>Business Applications</h3>
+                    <p>Lead generation and client feedback systems</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Getting Started Section -->
+    <section class="getting-started">
+        <div class="container">
+            <h2 class="fade-in">Get Started in 3 Simple Steps</h2>
+            <div class="steps">
+                <div class="step fade-in">
+                    <div class="step-number">1</div>
+                    <h3>Join Our Discord</h3>
+                    <p>Join our Discord server to get support and request your API key</p>
+                    <a href="https://discord.gg/U2G5ab6uaK" class="btn btn-primary" style="margin-top: 1rem;">Join Server</a>
+                </div>
+                <div class="step fade-in">
+                    <div class="step-number">2</div>
+                    <h3>Create Support Ticket</h3>
+                    <p>Create a ticket to request your API key with your website details</p>
+                    <a href="https://discord.com/channels/1385931113389883422/1385931825334980688" class="btn btn-primary" style="margin-top: 1rem;">Create Ticket</a>
+                </div>
+                <div class="step fade-in">
+                    <div class="step-number">3</div>
+                    <h3>Start Building</h3>
+                    <p>Get your API key and start integrating with our comprehensive documentation</p>
+                    <a href="https://dms-api.mcboss.top/api-doc" class="btn btn-primary" style="margin-top: 1rem;">View Docs</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Special Thanks Section -->
+    <section class="special-thanks">
+        <div class="container">
+            <div class="thanks-card fade-in">
+                <h2>🌟 Special Thanks</h2>
+                <p>Huge appreciation to <strong>McBoss</strong>, the brilliant creator who works tirelessly to bring you this amazing API service. This project wouldn't exist without their dedication and hard work.</p>
+                <a href="https://mcboss.top/" class="btn btn-primary">Visit McBoss.top</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-links">
+                    <a href="https://dms-api.mcboss.top/api-doc">Documentation</a>
+                    <a href="https://discord.gg/U2G5ab6uaK">Discord Support</a>
+                    <a href="https://mcboss.top/">McBoss.top</a>
+                    <a href="https://discord.com/channels/1385931113389883422/1385931825334980688">Create Ticket</a>
+                </div>
+                <div style="color: #8b949e; font-size: 0.9rem;">
+                    <p>© 2025 Discord Message API. Built with ❤️ by McBoss</p>
+                    <p>Base URL: <code style="background: rgba(48, 54, 61, 0.5); padding: 0.25rem 0.5rem; border-radius: 4px;">https://dms-api.mcboss.top/</code></p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+
+        // Scroll progress indicator
+        window.addEventListener('scroll', () => {
+            const progress = (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100;
+            document.querySelector('.scroll-progress').style.width = progress + '%';
+        });
+
+        // Fade in animation on scroll
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.fade-in').forEach(el => {
+            observer.observe(el);
+        });
+
+        // Button click effects
+        document.querySelectorAll('.btn').forEach(button => {
+            button.addEventListener('click', function(e) {
+                // Create ripple effect
+                const ripple = document.createElement('span');
+                const rect = this.getBoundingClientRect();
+                const size = Math.max(rect.width, rect.height);
+                const x = e.clientX - rect.left - size / 2;
+                const y = e.clientY - rect.top - size / 2;
+
+                ripple.style.width = ripple.style.height = size + 'px';
+                ripple.style.left = x + 'px';
+                ripple.style.top = y + 'px';
+                ripple.style.position = 'absolute';
+                ripple.style.borderRadius = '50%';
+                ripple.style.background = 'rgba(255, 255, 255, 0.3)';
+                ripple.style.transform = 'scale(0)';
+                ripple.style.animation = 'ripple 0.6s linear';
+                ripple.style.pointerEvents = 'none';
+
+                this.appendChild(ripple);
+
+                setTimeout(() => {
+                    ripple.remove();
+                }, 600);
+            });
+        });
+
+        // Add ripple animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes ripple {
+                to {
+                    transform: scale(4);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Particle effect for hero section
+        function createParticles() {
+            const hero = document.querySelector('.hero');
+            for (let i = 0; i < 20; i++) {
+                const particle = document.createElement('div');
+                particle.style.position = 'absolute';
+                particle.style.width = Math.random() * 4 + 1 + 'px';
+                particle.style.height = particle.style.width;
+                particle.style.background = 'rgba(88, 166, 255, 0.3)';
+                particle.style.borderRadius = '50%';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                particle.style.animation = `float ${Math.random() * 10 + 10}s infinite linear`;
+                particle.style.pointerEvents = 'none';
+                hero.appendChild(particle);
+            }
+        }
+
+        // Initialize particles after page load
+        window.addEventListener('load', createParticles);
+    </script>
+</body>
+</html>
