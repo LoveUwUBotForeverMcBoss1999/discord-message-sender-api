@@ -487,261 +487,126 @@ Required Headers:
             </section>
 
             <!-- API Endpoints -->
-            <section id="endpoints" class="section">
-                <h2>📡 API Endpoints</h2>
+			<!-- Updated API Endpoints Section -->
+			<section id="endpoints" class="section">
+				<h2>📡 API Endpoints</h2>
 
-                <h3>1. POST /api/{key}/send</h3>
-                <p><strong>Recommended method for longer messages and better security</strong></p>
+				<h3>1. POST /api/{key}/send</h3>
+				<p><strong>Recommended method for longer messages and better security</strong></p>
 
-                <div class="code-title">Endpoint</div>
-                <div class="code-block">
-                    <pre>POST https://dms-api.mcboss.top/api/{your-api-key}/send</pre>
-                </div>
+				<div class="code-title">Endpoint</div>
+				<div class="code-block">
+					<pre>POST https://dms-api.mcboss.top/api/{your-api-key}/send</pre>
+				</div>
 
-                <div class="code-title">Request Body (JSON)</div>
-                <div class="code-block">
-                    <pre>{
+				<div class="code-title">Request Body (JSON)</div>
+				<div class="code-block">
+					<pre>{
   <span class="key">"email"</span>: <span class="string">"user@example.com"</span>,
-  <span class="key">"message"</span>: <span class="string">"Hello! This is my message to support."</span>
+  <span class="key">"message"</span>: <span class="string">"Hello! This is my message to support."</span>,
+  <span class="key">"discord_id"</span>: <span class="string">"123456789012345678"</span> <span style="color: #238636;">// ← NEW: Optional Discord ID</span>
 }</pre>
-                </div>
+				</div>
 
-                <h3>2. GET /api/{key}/email-{email}/message-{message}</h3>
-                <p><strong>Simple GET method for basic implementations</strong></p>
+				<h3>2. GET /api/{key}/email-{email}/message-{message}</h3>
+				<p><strong>Simple GET method for basic implementations</strong></p>
 
-                <div class="code-title">Endpoint</div>
-                <div class="code-block">
-                    <pre>GET https://dms-api.mcboss.top/api/{key}/email-{email}/message-{message}</pre>
-                </div>
+				<div class="code-title">Endpoint</div>
+				<div class="code-block">
+					<pre>GET https://dms-api.mcboss.top/api/{key}/email-{email}/message-{message}</pre>
+				</div>
 
-                <div class="code-title">Example</div>
-                <div class="code-block">
-                    <pre>https://dms-api.mcboss.top/api/your-key/email-john@example.com/message-Need%20help%20with%20my%20order</pre>
-                </div>
+				<div class="code-title">Example</div>
+				<div class="code-block">
+					<pre>https://dms-api.mcboss.top/api/your-key/email-john@example.com/message-Need%20help%20with%20my%20order</pre>
+				</div>
 
-                <h3>Response Format</h3>
+				<h3>3. NEW: GET with Discord ID</h3>
+				<p><strong>Enhanced GET method with Discord user identification</strong></p>
 
-                <div class="success-box">
-                    <strong>✅ Success Response (200)</strong>
-                    <div class="response">
-                        <pre>{
+				<div class="code-title">Endpoint</div>
+				<div class="code-block">
+					<pre>GET https://dms-api.mcboss.top/api/{key}/email-{email}/message-{message}/id-{discord-id}</pre>
+				</div>
+
+				<div class="code-title">Example</div>
+				<div class="code-block">
+					<pre>https://dms-api.mcboss.top/api/your-key/email-john@example.com/message-Need%20help/id-123456789012345678</pre>
+				</div>
+
+				<div class="info-box">
+					<strong>🆕 Discord ID Enhancement:</strong><br>
+					• Discord ID parameter is optional in all endpoints<br>
+					• Must be numeric (Discord user ID format)<br>
+					• Automatically fetches and displays Discord username<br>
+					• Fully backward compatible with existing implementations
+				</div>
+
+				<h3>Response Format</h3>
+
+				<div class="success-box">
+					<strong>✅ Success Response (200)</strong>
+					<div class="response">
+						<pre>{
   <span class="key">"status"</span>: <span class="string">"success"</span>,
   <span class="key">"message"</span>: <span class="string">"Message sent to Discord"</span>,
   <span class="key">"email"</span>: <span class="string">"user@example.com"</span>,
+  <span class="key">"discord_id"</span>: <span class="string">"123456789012345678"</span>, <span style="color: #238636;">// ← NEW: Included when provided</span>
   <span class="key">"sent_message"</span>: <span class="string">"Hello! This is my message."</span>,
   <span class="key">"channel_id"</span>: <span class="string">"123456789"</span>,
   <span class="key">"server_id"</span>: <span class="string">"987654321"</span>,
-  <span class="key">"source"</span>: <span class="string">"https://yourwebsite.com"</span>
+  <span class="key">"owner_id"</span>: <span class="string">"owner_id_here"</span>, <span style="color: #238636;">// ← NEW: API key owner ID</span>
+  <span class="key">"source"</span>: <span class="string">"https://yourwebsite.com"</span>,
+  <span class="key">"security_verified"</span>: <span class="string">"API owner has administrator permissions"</span> <span style="color: #238636;">// ← NEW: Security status</span>
 }</pre>
-                    </div>
-                </div>
+					</div>
+				</div>
 
-                <div class="warning-box">
-                    <strong>❌ Error Response (403/400/500)</strong>
-                    <div class="response error">
-                        <pre>{
+				<div class="warning-box">
+					<strong>❌ Error Response (403/400/500)</strong>
+					<div class="response error">
+						<pre>{
   <span class="key">"error"</span>: <span class="string">"Request must come from authorized URL"</span>,
   <span class="key">"status"</span>: <span class="string">"unauthorized"</span>,
   <span class="key">"security_note"</span>: <span class="string">"Request must come from authorized website"</span>
 }</pre>
-                    </div>
-                </div>
+					</div>
+				</div>
 
-                <h3>Validation Endpoints</h3>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Endpoint</th>
-                            <th>Method</th>
-                            <th>Description</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>/validate/{key}</td>
-                            <td>GET</td>
-                            <td>Check if your URL is authorized for the API key</td>
-                        </tr>
-                        <tr>
-                            <td>/keys/{key}/info</td>
-                            <td>GET</td>
-                            <td>Get configuration info for your API key</td>
-                        </tr>
-                        </tbody>
-                </table>
-            </section>
-
-            <!-- Examples -->
-            <section id="examples" class="section">
-                <h2>💻 Code Examples</h2>
-
-                <h3>JavaScript (Fetch API)</h3>
-                <div class="code-title">contact-form.js</div>
-                <div class="code-block">
-                    <pre>async function sendMessage() {
-    const email = document.getElementById('email').value;
-    const message = document.getElementById('message').value;
-
-    try {
-        const response = await fetch('https://dms-api.mcboss.top/api/YOUR-API-KEY/send', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                email: email,
-                message: message
-            })
-        });
-
-        const result = await response.json();
-
-        if (result.status === 'success') {
-            alert('Message sent successfully!');
-        } else {
-            alert('Error: ' + result.error);
-        }
-    } catch (error) {
-        alert('Network error: ' + error.message);
-    }
+				<div class="warning-box">
+					<strong>⚠️ Discord ID Validation Errors:</strong>
+					<div class="response error">
+						<pre>{
+  <span class="key">"error"</span>: <span class="string">"Invalid Discord ID format - must be numeric"</span>,
+  <span class="key">"status"</span>: <span class="string">"validation_error"</span>
 }</pre>
-                </div>
+					</div>
+				</div>
 
-                <h3>HTML Contact Form</h3>
-                <div class="code-title">contact.html</div>
-                <div class="code-block">
-                    <pre>&lt;form id="contactForm" onsubmit="sendMessage(); return false;"&gt;
-    &lt;div&gt;
-        &lt;label for="email"&gt;Email:&lt;/label&gt;
-        &lt;input type="email" id="email" required&gt;
-    &lt;/div&gt;
-    &lt;div&gt;
-        &lt;label for="message"&gt;Message:&lt;/label&gt;
-        &lt;textarea id="message" rows="5" required&gt;&lt;/textarea&gt;
-    &lt;/div&gt;
-    &lt;button type="submit"&gt;Send Message&lt;/button&gt;
-&lt;/form&gt;</pre>
-                </div>
+				<h3>Validation Endpoints</h3>
+				<table>
+					<thead>
+						<tr>
+							<th>Endpoint</th>
+							<th>Method</th>
+							<th>Description</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>/validate/{key}</td>
+							<td>GET</td>
+							<td>Check if your URL is authorized for the API key</td>
+						</tr>
+						<tr>
+							<td>/keys/{key}/info</td>
+							<td>GET</td>
+							<td>Get configuration info for your API key</td>
+						</tr>
+					</tbody>
+				</table>
+			</section>
 
-                <h3>jQuery Example</h3>
-                <div class="code-title">jquery-example.js</div>
-                <div class="code-block">
-                    <pre>$('#contactForm').submit(function(e) {
-    e.preventDefault();
-
-    $.ajax({
-        url: 'https://dms-api.mcboss.top/api/YOUR-API-KEY/send',
-        method: 'POST',
-        contentType: 'application/json',
-        data: JSON.stringify({
-            email: $('#email').val(),
-            message: $('#message').val()
-        }),
-        success: function(response) {
-            alert('Message sent successfully!');
-        },
-        error: function(xhr) {
-            const error = JSON.parse(xhr.responseText);
-            alert('Error: ' + error.error);
-        }
-    });
-});</pre>
-                </div>
-
-                <h3>PHP Example</h3>
-                <div class="code-title">send-message.php</div>
-                <div class="code-block">
-                    <pre>&lt;?php
-$apiKey = 'YOUR-API-KEY';
-$apiUrl = 'https://dms-api.mcboss.top/api/' . $apiKey . '/send';
-
-$data = [
-    'email' => $_POST['email'],
-    'message' => $_POST['message']
-];
-
-$options = [
-    'http' => [
-        'header' => "Content-type: application/json\r\n",
-        'method' => 'POST',
-        'content' => json_encode($data)
-    ]
-];
-
-$context = stream_context_create($options);
-$result = file_get_contents($apiUrl, false, $context);
-$response = json_decode($result, true);
-
-if ($response['status'] === 'success') {
-    echo 'Message sent successfully!';
-} else {
-    echo 'Error: ' . $response['error'];
-}
-?&gt;</pre>
-                </div>
-            </section>
-
-            <!-- Use Cases -->
-            <section id="use-cases" class="section">
-                <h2>🎯 What You Can Build</h2>
-
-                <div class="cards">
-                    <div class="card">
-                        <div class="card-icon">📝</div>
-                        <h3>Contact Forms</h3>
-                        <p>Replace traditional email contact forms with instant Discord notifications. Perfect for support tickets and customer inquiries.</p>
-                    </div>
-                    <div class="card">
-                        <div class="card-icon">🛒</div>
-                        <h3>E-commerce Alerts</h3>
-                        <p>Get notified instantly when customers place orders, abandon carts, or need support. Never miss a sale again.</p>
-                    </div>
-                    <div class="card">
-                        <div class="card-icon">📊</div>
-                        <h3>System Monitoring</h3>
-                        <p>Send server alerts, error notifications, and system status updates directly to your Discord channels.</p>
-                    </div>
-                    <div class="card">
-                        <div class="card-icon">🎮</div>
-                        <h3>Gaming Communities</h3>
-                        <p>Create registration forms, event signups, and community feedback systems that integrate with your Discord server.</p>
-                    </div>
-                    <div class="card">
-                        <div class="card-icon">📚</div>
-                        <h3>Educational Platforms</h3>
-                        <p>Student submissions, assignment notifications, and teacher-student communication channels.</p>
-                    </div>
-                    <div class="card">
-                        <div class="card-icon">💼</div>
-                        <h3>Business Applications</h3>
-                        <p>Lead generation forms, client feedback, appointment requests, and internal team notifications.</p>
-                    </div>
-                    <div class="card">
-                        <div class="card-icon">🎨</div>
-                        <h3>Creative Projects</h3>
-                        <p>Portfolio contact forms, commission requests, collaboration inquiries, and project feedback systems.</p>
-                    </div>
-                    <div class="card">
-                        <div class="card-icon">📈</div>
-                        <h3>Marketing Campaigns</h3>
-                        <p>Newsletter signups, survey responses, contest entries, and customer feedback collection.</p>
-                    </div>
-                    <div class="card">
-                        <div class="card-icon">🔧</div>
-                        <h3>Technical Services</h3>
-                        <p>Bug reports, feature requests, maintenance notifications, and client support systems.</p>
-                    </div>
-                </div>
-
-                <div class="info-box">
-                    <strong>💡 Pro Tips for Implementation:</strong><br>
-                    • Use POST method for sensitive data and longer messages<br>
-                    • Implement client-side validation for better UX<br>
-                    • Add loading states and success/error feedback<br>
-                    • Consider rate limiting on your end for abuse prevention<br>
-                    • Use meaningful channel names for different types of messages
-                </div>
-            </section>
 
             <!-- Security -->
             <section id="security" class="section">
