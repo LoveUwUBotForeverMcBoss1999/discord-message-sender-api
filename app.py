@@ -647,27 +647,6 @@ def send_message_get(key, email, message):
         }), 500
 
 
-@app.route('/debug')
-def debug():
-    """Debug endpoint to check environment variables"""
-    discord_token_1 = os.getenv('DISCORD_BOT_TOKEN')
-    discord_token_2 = os.getenv('discord_bot_token')
-
-    return jsonify({
-        "DISCORD_BOT_TOKEN": "SET" if discord_token_1 else "NOT SET",
-        "discord_bot_token": "SET" if discord_token_2 else "NOT SET",
-        "log_channel_id": LOG_CHANNEL_ID,
-        "env_vars": list(os.environ.keys())
-    })
-
-
-@app.route('/keys', methods=['GET'])
-def get_keys():
-    """Admin endpoint to view current keys (remove in production)"""
-    keys_data = load_keys()
-    return jsonify(keys_data)
-
-
 @app.route('/keys/<key>/info', methods=['GET'])
 def get_key_info(key):
     """Get information about a specific key with security validation"""
@@ -828,24 +807,6 @@ def get_bot_invite_link():
         }), 500
 
 
-@app.route('/test-log')
-def test_log():
-    """Test endpoint to verify logging functionality"""
-    success = send_usage_log(
-        api_key="TEST_KEY",
-        endpoint_type="GET",
-        user_email="test@example.com",
-        source_url="https://test.example.com",
-        status="test"
-    )
-
-    return jsonify({
-        "status": "success" if success else "failed",
-        "message": "Test log sent" if success else "Failed to send test log",
-        "log_channel": LOG_CHANNEL_ID
-    })
-
-
 # Handle preflight OPTIONS requests
 @app.before_request
 def handle_preflight():
@@ -901,6 +862,7 @@ def not_found_error(e):
         "error": "Not Found",
         "status": "not_found"
     }), 404
+
 
 
 if __name__ == '__main__':
