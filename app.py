@@ -773,16 +773,22 @@ def get_key_info(key):
     # Log successful access
     send_usage_log(key, "GET", source_url=source_info, status="success")
 
+    # Build access_status object - only include admin_check_error if there's an actual error
+    access_status = {
+        "server_access": server_access,
+        "channel_access": channel_access,
+        "owner_has_admin": has_admin
+    }
+
+    # Only add admin_check_error if there's actually an error
+    if admin_error:
+        access_status["admin_check_error"] = admin_error
+
     return jsonify({
         "key": key,
         "owner_id": owner_id,
         "config": key_config,
-        "access_status": {
-            "server_access": server_access,
-            "channel_access": channel_access,
-            "owner_has_admin": has_admin,
-            "admin_check_error": admin_error
-        },
+        "access_status": access_status,
         "security_status": "SECURE" if (server_access and channel_access and has_admin) else "INSECURE",
         "logging": {
             "enabled": True,
