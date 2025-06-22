@@ -876,5 +876,23 @@ def api_documentation():
         }), 500
 
 
+@app.route('/main')
+def main_page():
+    """The API Main Page"""
+    try:
+        with open('main.html', 'r', encoding='utf-8') as f:
+            html_content = f.read()
+        return html_content, 200, {'Content-Type': 'text/html; charset=utf-8'}
+    except FileNotFoundError:
+        return jsonify({
+            "error": "Main page not found",
+            "status": "file_not_found"
+        }), 404
+    except Exception as e:
+        return jsonify({
+            "error": f"Error loading documentation: {str(e)}",
+            "status": "server_error"
+        }), 500
+
 if __name__ == '__main__':
     app.run(debug=True)
