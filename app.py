@@ -894,5 +894,14 @@ def main_page():
             "status": "server_error"
         }), 500
 
+
+@app.errorhandler(404)
+def not_found_error(e):
+    return jsonify({
+        "error": "Not Found",
+        "status": "not_found"
+    }), 404
+
+
 if __name__ == '__main__':
     app.run(debug=True)
