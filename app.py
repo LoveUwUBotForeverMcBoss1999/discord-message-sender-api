@@ -298,7 +298,38 @@ def check_user_admin_permissions(user_id, server_id, bot_token):
         return False, f"Error checking permissions: {str(e)}"
 
 
-def send_discord_message(email, message, bot_token, channel_id, source_info=None):
+def get_discord_username(user_id, bot_token):
+    """
+    Get Discord username from user ID
+    Returns (username, error_message)
+    """
+    try:
+        url = f"https://discord.com/api/v9/users/{user_id}"
+        headers = {
+            "Authorization": f"Bot {bot_token}",
+            "Content-Type": "application/json"
+        }
+
+        response = requests.get(url, headers=headers)
+
+        if response.status_code == 200:
+            user_data = response.json()
+            username = user_data.get('username', 'Unknown')
+            return username, None
+        elif response.status_code == 404:
+            return None, "User not found"
+        elif response.status_code == 403:
+            return None, "Bot lacks permission to fetch user data"
+        else:
+            return None, f"Discord API error: {response.status_code}"
+
+    except Exception as e:
+        return None, f"Error fetching username: {str(e)}"
+
+
+# 2. Update the send_discord_message function (replace the existing one):
+
+def send_discord_message(email, message, bot_token, channel_id, source_info=None, discord_id=None):
     # Format message - replace \ with actual line breaks
     formatted_message = message.replace('\\', '\n')
 
@@ -307,6 +338,16 @@ def send_discord_message(email, message, bot_token, channel_id, source_info=None
     if source_info:
         source_text = f"\n🔗 **Source:** {source_info}"
 
+    # Handle Discord ID and username
+    discord_info = ""
+    if discord_id:
+        username, error = get_discord_username(discord_id, bot_token)
+        if username:
+            discord_info = f"\n🔴 **Username & ID:** {username} ({discord_id})"
+        else:
+            # Show ID even if username fetch failed
+            discord_info = f"\n🔴 **Username & ID:** Unknown ({discord_id}) - {error}"
+
     url = f"https://discord.com/api/v9/channels/{channel_id}/messages"
     headers = {
         "Authorization": f"Bot {bot_token}",
@@ -314,10 +355,10 @@ def send_discord_message(email, message, bot_token, channel_id, source_info=None
     }
 
     # If message is short enough, use embed description (4096 char limit)
-    if len(formatted_message) <= 3800:  # Leave buffer for source info
+    if len(formatted_message) <= 3600:  # Leave buffer for source info and discord info
         embed = {
             "title": "📧 New Message",
-            "description": f"**📧 Email:** {email}\n\n**💬 Message:**\n{formatted_message}{source_text}",
+            "description": f"**📧 Email:** {email}{discord_info}\n\n**💬 Message:**\n{formatted_message}{source_text}",
             "color": 0x00ff00,
             "footer": {
                 "text": "Customer Service API - Secure"
@@ -339,7 +380,7 @@ def send_discord_message(email, message, bot_token, channel_id, source_info=None
             # Send header message first
             header_embed = {
                 "title": "📧 New Message",
-                "description": f"**📧 Email:** {email}\n\n**💬 Message:** (Long message - sent in parts){source_text}",
+                "description": f"**📧 Email:** {email}{discord_info}\n\n**💬 Message:** (Long message - sent in parts){source_text}",
                 "color": 0x00ff00,
                 "footer": {
                     "text": "Customer Service API - Secure"
@@ -492,7 +533,8 @@ def send_message_post(key):
         }), 400
 
     # Send message to Discord
-    success = send_discord_message(email, message, bot_token, channel_id, source_info)
+    discord_id = data.get('discord_id')  # Add this line to get discord_id from JSON
+    success = send_discord_message(email, message, bot_token, channel_id, source_info, discord_id)
 
     if success:
         # Log successful usage
@@ -502,6 +544,7 @@ def send_message_post(key):
             "status": "success",
             "message": "Message sent to Discord",
             "email": email,
+            "discord_id": discord_id,  # Add this line
             "sent_message": message.replace('\\', '\n'),
             "channel_id": channel_id,
             "server_id": server_id,
@@ -520,9 +563,9 @@ def send_message_post(key):
         }), 500
 
 
-@app.route('/api/<key>/email-<email>/message-<path:message>')
-def send_message_get(key, email, message):
-    """GET endpoint with URL authentication, owner verification, and logging"""
+@app.route('/api/<key>/email-<email>/message-<path:message>/id-<discord_id>')
+def send_message_get_with_id(key, email, message, discord_id):
+    """GET endpoint with Discord ID, URL authentication, owner verification, and logging"""
 
     # Get origin and referer from headers
     origin = request.headers.get('Origin')
@@ -596,18 +639,22 @@ def send_message_get(key, email, message):
             "security_note": "Only users with administrator permissions can use API keys for this server"
         }), 403
 
-    # Decode URL-encoded message and email
+    # Decode URL-encoded message, email, and discord_id
     decoded_message = unquote(message)
     decoded_email = unquote(email)
+    decoded_discord_id = unquote(discord_id)
 
     # Additional decoding to handle double encoding
     decoded_email = unquote(decoded_email)
     decoded_message = unquote(decoded_message)
+    decoded_discord_id = unquote(decoded_discord_id)
 
     print(f"Original email: {email}")
     print(f"Decoded email: {decoded_email}")
     print(f"Original message: {message}")
     print(f"Decoded message: {decoded_message}")
+    print(f"Original discord_id: {discord_id}")
+    print(f"Decoded discord_id: {decoded_discord_id}")
 
     # Validate email format
     if not validate_email(decoded_email):
@@ -618,8 +665,17 @@ def send_message_get(key, email, message):
             "received_email": decoded_email
         }), 400
 
-    # Send message to Discord
-    success = send_discord_message(decoded_email, decoded_message, bot_token, channel_id, source_info)
+    # Validate Discord ID format (should be numeric)
+    if not decoded_discord_id.isdigit():
+        send_usage_log(key, "GET", user_email=decoded_email, source_url=source_info, status="invalid_discord_id")
+        return jsonify({
+            "error": "Invalid Discord ID format. Discord ID must be numeric.",
+            "status": "bad_request",
+            "received_discord_id": decoded_discord_id
+        }), 400
+
+    # Send message to Discord with Discord ID
+    success = send_discord_message(decoded_email, decoded_message, bot_token, channel_id, source_info, decoded_discord_id)
 
     if success:
         # Log successful usage
@@ -629,6 +685,7 @@ def send_message_get(key, email, message):
             "status": "success",
             "message": "Message sent to Discord",
             "email": decoded_email,
+            "discord_id": decoded_discord_id,
             "sent_message": decoded_message.replace('\\', '\n'),
             "channel_id": channel_id,
             "server_id": server_id,
