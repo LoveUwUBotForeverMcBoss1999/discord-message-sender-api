@@ -957,7 +957,7 @@ def main_page():
 
 @app.route('/api/<key>/server-info', methods=['GET'])
 def get_server_info(key):
-    """Get Discord server information with URL authentication and owner verification"""
+    """Get Discord server information with URL authentication, owner verification, and invite link"""
 
     # Get origin and referer from headers
     origin = request.headers.get('Origin')
@@ -1053,7 +1053,8 @@ def get_server_info(key):
                 "owner_id": guild_data.get("owner_id"),
                 "verification_level": guild_data.get("verification_level"),
                 "created_at": guild_data.get("id"),  # Can calculate creation date from ID
-                "features": guild_data.get("features", [])
+                "features": guild_data.get("features", []),
+                "invite_links": []  # Initialize invite links array
             }
 
             # Build icon URL if icon exists
@@ -1067,6 +1068,102 @@ def get_server_info(key):
             if banner_hash:
                 server_info[
                     "server_banner_url"] = f"https://cdn.discordapp.com/banners/{server_id}/{banner_hash}.png?size=1024"
+
+            # Get server invite links
+            try:
+                invites_url = f"https://discord.com/api/v9/guilds/{server_id}/invites"
+                invites_response = requests.get(invites_url, headers=headers)
+
+                if invites_response.status_code == 200:
+                    invites_data = invites_response.json()
+
+                    # Process invite links and extract useful information
+                    for invite in invites_data:
+                        invite_info = {
+                            "code": invite.get("code"),
+                            "url": f"https://discord.gg/{invite.get('code')}",
+                            "channel_name": invite.get("channel", {}).get("name", "Unknown"),
+                            "channel_id": invite.get("channel", {}).get("id"),
+                            "inviter": None,
+                            "expires_at": invite.get("expires_at"),
+                            "max_uses": invite.get("max_uses"),
+                            "uses": invite.get("uses", 0),
+                            "temporary": invite.get("temporary", False),
+                            "created_at": invite.get("created_at")
+                        }
+
+                        # Get inviter information if available
+                        inviter_data = invite.get("inviter")
+                        if inviter_data:
+                            invite_info["inviter"] = {
+                                "username": inviter_data.get("username"),
+                                "id": inviter_data.get("id"),
+                                "discriminator": inviter_data.get("discriminator")
+                            }
+
+                        server_info["invite_links"].append(invite_info)
+
+                elif invites_response.status_code == 403:
+                    # Bot doesn't have permission to view invites
+                    server_info["invite_links_error"] = "Bot lacks permission to view server invites"
+
+                else:
+                    server_info["invite_links_error"] = f"Failed to fetch invites: {invites_response.status_code}"
+
+            except Exception as invite_error:
+                server_info["invite_links_error"] = f"Error fetching invites: {str(invite_error)}"
+
+            # Try to create a new invite link if bot has permission
+            try:
+                # Find a general text channel to create invite for
+                channels_url = f"https://discord.com/api/v9/guilds/{server_id}/channels"
+                channels_response = requests.get(channels_url, headers=headers)
+
+                if channels_response.status_code == 200:
+                    channels_data = channels_response.json()
+
+                    # Find first text channel where bot can create invite
+                    general_channel = None
+                    for channel in channels_data:
+                        if channel.get("type") == 0:  # Text channel
+                            general_channel = channel.get("id")
+                            break
+
+                    if general_channel:
+                        # Try to create a new invite
+                        create_invite_url = f"https://discord.com/api/v9/channels/{general_channel}/invites"
+                        invite_payload = {
+                            "max_age": 86400,  # 24 hours
+                            "max_uses": 0,  # No limit
+                            "temporary": False,
+                            "unique": True
+                        }
+
+                        create_response = requests.post(create_invite_url, json=invite_payload, headers=headers)
+
+                        if create_response.status_code == 200:
+                            new_invite = create_response.json()
+                            server_info["generated_invite"] = {
+                                "code": new_invite.get("code"),
+                                "url": f"https://discord.gg/{new_invite.get('code')}",
+                                "expires_at": new_invite.get("expires_at"),
+                                "channel_name": new_invite.get("channel", {}).get("name"),
+                                "note": "Freshly generated invite link (24h expiry)"
+                            }
+                        else:
+                            server_info[
+                                "generated_invite_error"] = f"Failed to create new invite: {create_response.status_code}"
+
+            except Exception as create_error:
+                server_info["generated_invite_error"] = f"Error creating invite: {str(create_error)}"
+
+            # Add summary of invite information
+            server_info["invite_summary"] = {
+                "total_invites": len(server_info["invite_links"]),
+                "has_permanent_invites": any(invite.get("max_uses") == 0 and invite.get("expires_at") is None
+                                             for invite in server_info["invite_links"]),
+                "has_generated_invite": "generated_invite" in server_info
+            }
 
             # Log successful usage
             send_usage_log(key, "GET", source_url=source_info, status="success")
@@ -1108,7 +1205,6 @@ def get_server_info(key):
             "error": f"Error fetching server information: {str(e)}",
             "status": "server_error"
         }), 500
-
 
 @app.errorhandler(404)
 def not_found_error(e):
