@@ -410,6 +410,7 @@
                 <li><a href="#use-cases">Use Cases</a></li>
                 <li><a href="#security">Security</a></li>
                 <li><a href="#support">Support</a></li>
+                <li><a href="#server-info-api">Server Info</a></li>
             </ul>
         </div>
     </nav>
@@ -718,6 +719,141 @@ Required Headers:
 
                 <h3>Error Handling</h3>
                 <p>Our API provides detailed error messages to help you debug issues while not exposing sensitive system information to potential attackers. Security-related errors include specific guidance on resolving permission issues.</p>
+            </section>
+
+            <section id="server-info-api" class="section">
+                <h2>🔍 Discord Server Info API</h2>
+                <p>📊 Secure Server Information Retrieval for Registered Websites</p>
+                <br>
+
+                <div class="badges">
+                    <span class="badge">🔐 URL Authenticated</span>
+                    <span class="badge">👨‍💼 Admin Verified</span>
+                    <span class="badge">📝 Usage Logged</span>
+                </div>
+
+                <h3>📋 API Overview</h3>
+                <div class="info-box">
+                    The Discord Server Info API allows authorized websites to retrieve comprehensive information about Discord servers. This endpoint provides server statistics, branding assets, and configuration details in a secure, controlled manner.
+                </div>
+
+                <div class="success-box">
+                    <strong>🔒 Security First:</strong> Multi-layer security including URL authentication, admin permission verification, and usage logging.
+                </div>
+
+                <h3>🎯 Endpoint Details</h3>
+                <div class="code-title">Base Endpoint</div>
+                <div class="code-block"><pre>GET /api/{api-key}/server-info</pre></div>
+
+                <h3>URL Parameters</h3>
+                <table>
+                    <thead>
+                        <tr><th>Parameter</th><th>Type</th><th>Description</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>api-key</td><td>String</td><td>Your unique API key obtained via Discord bot command</td></tr>
+                    </tbody>
+                </table>
+                <div class="warning-box">⚠️ API key must be registered to your website's domain.</div>
+
+                <h3>🔐 Authentication & Security</h3>
+                <ul style="margin-left: 1.5rem;">
+                    <li>🌐 URL Validation: Must originate from registered domain</li>
+                    <li>👨‍💼 Admin Verification: API owner must have admin permissions</li>
+                    <li>🤖 Bot Access: Bot must be in the target server</li>
+                    <li>📝 Usage Logging: All requests are logged</li>
+                </ul>
+
+                <h3>📊 Server Information Response</h3>
+                <div class="code-title">Success (200 OK)</div>
+                <div class="code-block"><pre>{
+  "status": "success",
+  "server_info": {
+    "server_name": "Amazing Discord Server",
+    "server_description": "The best community server for developers",
+    "server_member_count": 1247,
+    "server_online_member_count": 342,
+    "server_icon_url": "https://cdn.discordapp.com/icons/123456789/abc123.png?size=512",
+    "server_banner_url": "https://cdn.discordapp.com/banners/123456789/banner123.png?size=1024",
+    "server_id": "123456789012345678",
+    "owner_id": "987654321098765432",
+    "verification_level": 2,
+    "created_at": "123456789012345678",
+    "features": ["COMMUNITY", "VERIFIED", "PARTNERED"]
+  },
+  "source": "https://yourdomain.com",
+  "security_verified": "API owner has administrator permissions"
+}</pre></div>
+
+                <h3>Response Fields</h3>
+                <table>
+                    <thead>
+                        <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>server_name</td><td>String</td><td>Display name of the server</td></tr>
+                        <tr><td>server_description</td><td>String|null</td><td>Description or null</td></tr>
+                        <tr><td>server_member_count</td><td>Number</td><td>Total members</td></tr>
+                        <tr><td>server_online_member_count</td><td>Number</td><td>Online members</td></tr>
+                        <tr><td>server_icon_url</td><td>String|null</td><td>Icon URL</td></tr>
+                        <tr><td>server_banner_url</td><td>String|null</td><td>Banner URL</td></tr>
+                        <tr><td>server_id</td><td>String</td><td>Server ID</td></tr>
+                        <tr><td>owner_id</td><td>String</td><td>Owner Discord ID</td></tr>
+                        <tr><td>verification_level</td><td>Number</td><td>Verification level (0–4)</td></tr>
+                        <tr><td>features</td><td>Array</td><td>Server features</td></tr>
+                    </tbody>
+                </table>
+
+                <h3>❌ Error Responses</h3>
+                <div class="code-block"><pre>401 Unauthorized
+{ "error": "Invalid API key", "status": "unauthorized" }
+
+403 Forbidden - URL Not Authorized
+{ "error": "Request must come from authorized URL: https://yourdomain.com", "status": "unauthorized" }
+
+403 Forbidden - Admin Permission Required
+{ "error": "API owner does not have administrator permissions in server", "status": "permission_denied" }
+
+404 Server Not Found
+{ "error": "Server not found or bot is not in the server", "status": "server_not_found" }
+
+500 Internal Server Error
+{ "error": "Discord bot token not configured", "status": "server_error" }</pre></div>
+
+                <h3>💻 JavaScript Example</h3>
+                <div class="code-block"><pre>// Fetch server info
+async function getServerInfo() {
+  try {
+    const res = await fetch('/api/your-api-key/server-info');
+    const data = await res.json();
+    if (data.status === 'success') {
+      document.getElementById('server-name').textContent = data.server_info.server_name;
+      document.getElementById('member-count').textContent = data.server_info.server_member_count;
+      document.getElementById('online-count').textContent = data.server_info.server_online_member_count;
+      if (data.server_info.server_icon_url) document.getElementById('server-icon').src = data.server_info.server_icon_url;
+      if (data.server_info.server_banner_url) document.getElementById('server-banner').src = data.server_info.server_banner_url;
+    }
+  } catch (err) {
+    console.error('Error:', err);
+  }
+}
+getServerInfo();</pre></div>
+
+                <h3>🎨 HTML Example</h3>
+                <div class="code-block"><pre>&lt;div class="server-info-container"&gt;
+  &lt;div class="server-header"&gt;
+    &lt;img id="server-icon" src="" alt="Server Icon" class="server-icon"&gt;
+    &lt;h2 id="server-name"&gt;Loading...&lt;/h2&gt;
+  &lt;/div&gt;
+  &lt;div class="server-banner"&gt;
+    &lt;img id="server-banner" src="" alt="Server Banner"&gt;
+  &lt;/div&gt;
+  &lt;div class="server-stats"&gt;
+    &lt;div class="stat"&gt;&lt;span class="stat-label"&gt;Total Members:&lt;/span&gt; &lt;span id="member-count"&gt;-&lt;/span&gt;&lt;/div&gt;
+    &lt;div class="stat"&gt;&lt;span class="stat-label"&gt;Online Now:&lt;/span&gt; &lt;span id="online-count"&gt;-&lt;/span&gt;&lt;/div&gt;
+  &lt;/div&gt;
+  &lt;p id="server-description"&gt;&lt;/p&gt;
+&lt;/div&gt;</pre></div>
             </section>
 
             <!-- Support -->
