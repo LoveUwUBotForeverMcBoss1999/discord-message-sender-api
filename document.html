@@ -767,6 +767,7 @@ Required Headers:
                 <h3>📊 Server Information Response</h3>
                 <div class="code-title">Success (200 OK)</div>
                 <div class="code-block"><pre>{
+{
   "status": "success",
   "server_info": {
     "server_name": "Amazing Discord Server",
@@ -779,11 +780,24 @@ Required Headers:
     "owner_id": "987654321098765432",
     "verification_level": 2,
     "created_at": "123456789012345678",
-    "features": ["COMMUNITY", "VERIFIED", "PARTNERED"]
+    "features": ["COMMUNITY", "VERIFIED", "PARTNERED"],
+    "invite_links": [...],
+    "generated_invite": {
+      "code": "abc123",
+      "url": "https://discord.gg/abc123",
+      "expires_at": "2025-06-26T...",
+      "note": "Freshly generated invite link (24h expiry)"
+    },
+    "invite_summary": {
+      "total_invites": 5,
+      "has_permanent_invites": true,
+      "has_generated_invite": true
+    }
   },
   "source": "https://yourdomain.com",
   "security_verified": "API owner has administrator permissions"
-}</pre></div>
+}
+</pre></div>
 
                 <h3>Response Fields</h3>
                 <table>
@@ -826,34 +840,91 @@ async function getServerInfo() {
   try {
     const res = await fetch('/api/your-api-key/server-info');
     const data = await res.json();
+
     if (data.status === 'success') {
-      document.getElementById('server-name').textContent = data.server_info.server_name;
-      document.getElementById('member-count').textContent = data.server_info.server_member_count;
-      document.getElementById('online-count').textContent = data.server_info.server_online_member_count;
-      if (data.server_info.server_icon_url) document.getElementById('server-icon').src = data.server_info.server_icon_url;
-      if (data.server_info.server_banner_url) document.getElementById('server-banner').src = data.server_info.server_banner_url;
+      const info = data.server_info;
+
+      document.getElementById('server-name').textContent = info.server_name;
+      document.getElementById('member-count').textContent = info.server_member_count;
+      document.getElementById('online-count').textContent = info.server_online_member_count;
+
+      if (info.server_icon_url) {
+        document.getElementById('server-icon').src = info.server_icon_url;
+      }
+
+      if (info.server_banner_url) {
+        document.getElementById('server-banner').src = info.server_banner_url;
+      }
+
+      // New: Generated invite
+      if (info.generated_invite) {
+        const el = document.getElementById('generated-invite');
+        el.innerHTML = `<a href="${info.generated_invite.url}" target="_blank">${info.generated_invite.url}</a><br><small>${info.generated_invite.note}</small>`;
+      }
+
+      // New: Invite summary
+      if (info.invite_summary) {
+        const summary = document.getElementById('invite-summary');
+        summary.textContent = `Total invites: ${info.invite_summary.total_invites}, Permanent: ${info.invite_summary.has_permanent_invites ? 'Yes' : 'No'}, New invite: ${info.invite_summary.has_generated_invite ? 'Yes' : 'No'}`;
+      }
+
+      // New: Invite links
+      if (Array.isArray(info.invite_links)) {
+        const list = document.getElementById('invite-links');
+        list.innerHTML = '';
+        info.invite_links.forEach(link => {
+          const li = document.createElement('li');
+          li.innerHTML = `<a href="${link}" target="_blank">${link}</a>`;
+          list.appendChild(li);
+        });
+      }
     }
   } catch (err) {
     console.error('Error:', err);
   }
 }
-getServerInfo();</pre></div>
+
+getServerInfo();
+</pre></div>
 
                 <h3>🎨 HTML Example</h3>
-                <div class="code-block"><pre>&lt;div class="server-info-container"&gt;
-  &lt;div class="server-header"&gt;
-    &lt;img id="server-icon" src="" alt="Server Icon" class="server-icon"&gt;
-    &lt;h2 id="server-name"&gt;Loading...&lt;/h2&gt;
-  &lt;/div&gt;
-  &lt;div class="server-banner"&gt;
-    &lt;img id="server-banner" src="" alt="Server Banner"&gt;
-  &lt;/div&gt;
-  &lt;div class="server-stats"&gt;
-    &lt;div class="stat"&gt;&lt;span class="stat-label"&gt;Total Members:&lt;/span&gt; &lt;span id="member-count"&gt;-&lt;/span&gt;&lt;/div&gt;
-    &lt;div class="stat"&gt;&lt;span class="stat-label"&gt;Online Now:&lt;/span&gt; &lt;span id="online-count"&gt;-&lt;/span&gt;&lt;/div&gt;
-  &lt;/div&gt;
-  &lt;p id="server-description"&gt;&lt;/p&gt;
-&lt;/div&gt;</pre></div>
+                <div class="code-block"><pre><div class="server-info-container">
+  <div class="server-header">
+    <img id="server-icon" src="" alt="Server Icon" class="server-icon">
+    <h2 id="server-name">Loading...</h2>
+  </div>
+
+  <div class="server-banner">
+    <img id="server-banner" src="" alt="Server Banner">
+  </div>
+
+  <div class="server-stats">
+    <div class="stat">
+      <span class="stat-label">Total Members:</span>
+      <span id="member-count">-</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Online Now:</span>
+      <span id="online-count">-</span>
+    </div>
+  </div>
+
+  <p id="server-description"></p>
+
+  <div class="server-invites">
+    <h3>Generated Invite</h3>
+    <div id="generated-invite">Loading...</div>
+
+    <h3>Invite Summary</h3>
+    <div id="invite-summary">Loading...</div>
+
+    <h3>All Invite Links</h3>
+    <ul id="invite-links">
+      <li>Loading...</li>
+    </ul>
+  </div>
+</div>
+</pre></div>
             </section>
 
             <!-- Support -->
