@@ -955,6 +955,161 @@ def main_page():
         }), 500
 
 
+@app.route('/api/<key>/server-info', methods=['GET'])
+def get_server_info(key):
+    """Get Discord server information with URL authentication and owner verification"""
+
+    # Get origin and referer from headers
+    origin = request.headers.get('Origin')
+    referer = request.headers.get('Referer')
+    source_info = origin or referer or "Unknown"
+
+    # Validate URL access first
+    is_valid, error_msg = validate_url_access(key, origin, referer)
+    if not is_valid:
+        # Log failed attempt
+        send_usage_log(key, "GET", source_url=source_info, status="unauthorized")
+        return jsonify({
+            "error": error_msg,
+            "status": "unauthorized",
+            "security_note": "Request must come from authorized website"
+        }), 403
+
+    # Load current keys
+    keys_data = load_keys()
+    valid_keys = keys_data.get("keys", {})
+
+    if key not in valid_keys:
+        send_usage_log(key, "GET", source_url=source_info, status="invalid_key")
+        return jsonify({
+            "error": "Invalid API key",
+            "status": "unauthorized"
+        }), 401
+
+    # Get key configuration
+    key_config = valid_keys[key]
+    server_id = key_config.get("server_id")
+    owner_id = key_config.get("owner_id")
+
+    if not server_id or not owner_id:
+        send_usage_log(key, "GET", source_url=source_info, status="config_error")
+        return jsonify({
+            "error": "Key configuration incomplete - missing server_id or owner_id",
+            "status": "server_error"
+        }), 500
+
+    # Get Discord bot token from environment
+    bot_token = os.getenv('DISCORD_BOT_TOKEN') or os.getenv('discord_bot_token')
+    if not bot_token:
+        send_usage_log(key, "GET", source_url=source_info, status="token_error")
+        return jsonify({
+            "error": "Discord bot token not configured",
+            "status": "server_error"
+        }), 500
+
+    # Check if bot is in the server
+    if not check_bot_in_server(server_id, bot_token):
+        send_usage_log(key, "GET", source_url=source_info, status="bot_access_error")
+        return jsonify({
+            "error": f"Bot is not in the server (ID: {server_id}) or lacks permissions",
+            "status": "bot_access_error",
+            "server_id": server_id
+        }), 403
+
+    # Security check: Verify API owner has admin permissions in the server
+    has_admin, admin_error = check_user_admin_permissions(owner_id, server_id, bot_token)
+    if not has_admin:
+        send_usage_log(key, "GET", source_url=source_info, status="permission_denied")
+        return jsonify({
+            "error": f"API owner does not have administrator permissions in server: {admin_error}",
+            "status": "permission_denied",
+            "owner_id": owner_id,
+            "server_id": server_id,
+            "security_note": "Only users with administrator permissions can access server info"
+        }), 403
+
+    try:
+        # Get server information
+        guild_url = f"https://discord.com/api/v9/guilds/{server_id}?with_counts=true"
+        headers = {
+            "Authorization": f"Bot {bot_token}",
+            "Content-Type": "application/json"
+        }
+
+        response = requests.get(guild_url, headers=headers)
+
+        if response.status_code == 200:
+            guild_data = response.json()
+
+            # Extract server information
+            server_info = {
+                "server_name": guild_data.get("name", "Unknown"),
+                "server_description": guild_data.get("description", None),
+                "server_member_count": guild_data.get("approximate_member_count", 0),
+                "server_online_member_count": guild_data.get("approximate_presence_count", 0),
+                "server_icon_url": None,
+                "server_banner_url": None,
+                "server_id": server_id,
+                "owner_id": guild_data.get("owner_id"),
+                "verification_level": guild_data.get("verification_level"),
+                "created_at": guild_data.get("id"),  # Can calculate creation date from ID
+                "features": guild_data.get("features", [])
+            }
+
+            # Build icon URL if icon exists
+            icon_hash = guild_data.get("icon")
+            if icon_hash:
+                server_info[
+                    "server_icon_url"] = f"https://cdn.discordapp.com/icons/{server_id}/{icon_hash}.png?size=512"
+
+            # Build banner URL if banner exists
+            banner_hash = guild_data.get("banner")
+            if banner_hash:
+                server_info[
+                    "server_banner_url"] = f"https://cdn.discordapp.com/banners/{server_id}/{banner_hash}.png?size=1024"
+
+            # Log successful usage
+            send_usage_log(key, "GET", source_url=source_info, status="success")
+
+            return jsonify({
+                "status": "success",
+                "server_info": server_info,
+                "source": source_info,
+                "security_verified": "API owner has administrator permissions"
+            })
+
+        elif response.status_code == 403:
+            send_usage_log(key, "GET", source_url=source_info, status="discord_permission_error")
+            return jsonify({
+                "error": "Bot lacks permissions to access server information",
+                "status": "discord_permission_error",
+                "server_id": server_id
+            }), 403
+
+        elif response.status_code == 404:
+            send_usage_log(key, "GET", source_url=source_info, status="server_not_found")
+            return jsonify({
+                "error": "Server not found or bot is not in the server",
+                "status": "server_not_found",
+                "server_id": server_id
+            }), 404
+
+        else:
+            send_usage_log(key, "GET", source_url=source_info, status="discord_api_error")
+            return jsonify({
+                "error": f"Discord API error: {response.status_code}",
+                "status": "discord_api_error",
+                "response_code": response.status_code
+            }), 500
+
+    except Exception as e:
+        send_usage_log(key, "GET", source_url=source_info, status="server_error")
+        return jsonify({
+            "error": f"Error fetching server information: {str(e)}",
+            "status": "server_error"
+        }), 500
+
+
 @app.errorhandler(404)
 def not_found_error(e):
     return jsonify({
